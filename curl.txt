@@ -1,13 +1,37 @@
 curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d "{\"requests\":[{\"predicate\":\"transcribed_to\", \"source\":\"gene ENSG00000166913\", \"target\":\"\$b60385cc\"}]}"
 
 
+
+
+
 curl -X POST http://localhost:5000/query \
 -H "Content-Type: application/json" \
 -d '{
   "requests": [
-    {"predicate": "transcribed_to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
-    {"predicate": "translates_to", "source": "$b60385cc", "target": "$d2044ee8"},
-    {"predicate": "genes_pathways", "source": "gene ENSG00000166913", "target": "$fa91b28c"}
+    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
+    {"predicate": "translates to", "source": "$b60385cc", "target": "$d2044ee8"},
+    {"predicate": "gene to pathway association", "source": "gene ENSG00000166913", "target": "$fa91b28c"}
+  ]
+}'
+
+
+
+curl -X POST http://localhost:5000/query \
+-H "Content-Type: application/json" \
+-d '{
+  "requests": [
+    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
+    {"predicate": "translates to", "source": "$b60385cc", "target": "$d2044ee8"}
+  ]
+}'
+
+Errors:
+
+curl -X POST http://localhost:5000/query \
+-H "Content-Type: application/json" \
+-d '{
+  "requests": [
+    {"predicate": "transcribed_to", "source": "gene ENSG00000166913", "target": "$b60385cc"}
   ]
 }'
 
@@ -16,7 +40,18 @@ curl -X POST http://localhost:5000/query \
 -H "Content-Type: application/json" \
 -d '{
   "requests": [
-    {"predicate": "transcribed_to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
+    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
     {"predicate": "translates_to", "source": "$b60385cc", "target": "$d2044ee8"}
   ]
 }'
+
+curl -X POST http://localhost:5000/query \
+-H "Content-Type: application/json" \
+-d '{
+  "requests": [
+    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
+    {"predicate": "translates to", "source": "$b60385cc", "target": "$d2044ee8"},
+    {"predicate": "genes pathways", "source": "gene ENSG00000166913", "target": "$fa91b28c"}
+  ]
+}'
+
