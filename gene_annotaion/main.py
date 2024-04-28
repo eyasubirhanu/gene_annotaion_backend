@@ -9,12 +9,21 @@ import os
 from typing import List
 import re
 import uuid
+import yaml 
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 metta = MeTTa()
 metta.run("!(bind! &space (new-space))")  # Initialize a new space at application start
+
+
+def load_schema_config(path: str):
+    with open(path, 'r') as file:
+        schema = yaml.safe_load(file)
+    return schema
+
+
 
 def load_dataset(path: str) -> None:
     if not os.path.exists(path):
@@ -37,7 +46,7 @@ def load_dataset(path: str) -> None:
     print(f"Finished loading {len(paths)} datasets.")
 
 
-load_dataset("./dataset")
+load_dataset("./Data")
 
 
 def parse_and_serialize(input_string):
@@ -60,6 +69,7 @@ def parse_and_serialize(input_string):
 
     return json.dumps(result, indent=2)  
 
+
 @app.route('/query', methods=['POST'])
 def process_query():
     data = request.get_json()
@@ -69,12 +79,15 @@ def process_query():
     try:
         requests = data['requests']
         # Parse and serialize the received data
-        query_code = generate_metta(requests)
+        schema = load_schema_config('./schema_config.yaml')
+        # logging.debug(f"schema: {schema}")
+        query_code = generate_metta(requests, schema)
+        # logging.debug(f"query_code: {query_code}")
         result = metta.run(query_code)
         parsed_result = parse_and_serialize(str(result))
         # logging.debug(f"Generated result Code: {result}")
         # Return the serialized result
-        return jsonify({"Generated query": "query_code","Result": json.loads(parsed_result)})
+        return jsonify({"Generated query": query_code,"Result": json.loads(parsed_result)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
