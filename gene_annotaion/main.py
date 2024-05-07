@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from biocypher import BioCypher
 from metta_generator import generate_metta
 from hyperon import MeTTa
 import logging
@@ -17,6 +18,8 @@ app = Flask(__name__)
 metta = MeTTa()
 metta.run("!(bind! &space (new-space))")  # Initialize a new space at application start
 
+bcy = BioCypher(schema_config_path='schema_config.yaml', biocypher_config_path='biocypher_config.yaml')
+schema = bcy._get_ontology_mapping()._extend_schema()
 
 def load_schema_config(path: str):
     with open(path, 'r') as file:
@@ -69,6 +72,23 @@ def parse_and_serialize(input_string):
 
     return json.dumps(result, indent=2)  
 
+
+def get_nodes():
+    nodes = []
+    for key, value in schema.items():
+        if value['represented_as'] == 'node':
+            nodes.append({
+                'type': key,
+                'is_a': value['is_a'],
+                'label': value['input_label'],
+                'properties': value.get('properties', {})
+            })
+    
+    return nodes
+
+@app.route('/nodes', methods=['GET'])
+def get_nodes_endpoint():
+    return jsonify(get_nodes())
 
 @app.route('/query', methods=['POST'])
 def process_query():
