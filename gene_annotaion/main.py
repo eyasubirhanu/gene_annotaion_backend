@@ -3,14 +3,11 @@ from biocypher import BioCypher
 from metta_generator import generate_metta
 from hyperon import MeTTa
 import logging
-# from hyperon import *
 import json
 import glob
 import os
-from typing import List
 import re
 import uuid
-import yaml 
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -18,15 +15,10 @@ app = Flask(__name__)
 metta = MeTTa()
 metta.run("!(bind! &space (new-space))")  # Initialize a new space at application start
 
-bcy = BioCypher(schema_config_path='schema_config.yaml', biocypher_config_path='biocypher_config.yaml')
+bcy = BioCypher(schema_config_path='./config/schema_config.yaml', biocypher_config_path='./config/biocypher_config.yaml')
 schema = bcy._get_ontology_mapping()._extend_schema()
-
-def load_schema_config(path: str):
-    with open(path, 'r') as file:
-        schema = yaml.safe_load(file)
-    return schema
-
-
+parent_nodes = ["position entity", "coding element", "non coding element", "genomic variant", "epigenomic feature", "3d genome structure", "ontology term", "chromosome chain"]
+parent_edges = ["expression", "annotation", "regulatory association"]
 
 def load_dataset(path: str) -> None:
     if not os.path.exists(path):
@@ -77,9 +69,10 @@ def get_nodes():
     nodes = []
     for key, value in schema.items():
         if value['represented_as'] == 'node':
+            if key in parent_nodes:
+                continue
             nodes.append({
                 'type': key,
-                'is_a': value['is_a'],
                 'label': value['input_label'],
                 'properties': value.get('properties', {})
             })
@@ -90,6 +83,8 @@ def get_edges():
     edges = []
     for key, value in schema.items():
         if value['represented_as'] == 'edge':
+            if key in parent_edges:
+                continue
             label = value.get('output_lable', value['input_label'])
             edge = {
                 'type': key,
@@ -141,7 +136,6 @@ def process_query():
     try:
         requests = data['requests']
         # Parse and serialize the received data
-        schema = load_schema_config('./schema_config.yaml')
         # logging.debug(f"schema: {schema}")
         query_code = generate_metta(requests, schema)
         # logging.debug(f"query_code: {query_code}")
