@@ -101,6 +101,25 @@ def get_edges():
     
     return edges
 
+
+def get_relations_for_node(node):
+    relations = []
+    node_label = node.replace('_', ' ')
+    for key, value in schema.items():
+        if value['represented_as'] == 'edge':
+            if 'source' in value and 'target' in value:
+                if value['source'] == node_label or value['target'] == node_label:
+                    label = value.get('output_lable', value['input_label'])
+                    relation = {
+                        'type': key,
+                        'label': label,
+                        'source': value.get('source', ''),
+                        'target': value.get('target', '')
+                    }
+                    relations.append(relation)
+    
+    return relations
+
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
     return jsonify(get_nodes())
@@ -108,6 +127,10 @@ def get_nodes_endpoint():
 @app.route('/edges', methods=['GET'])
 def get_edges_endpoint():
     return jsonify(get_edges())
+
+@app.route('/relations/<node_label>', methods=['GET'])
+def get_relations_for_node_endpoint(node_label):
+    return jsonify(get_relations_for_node(node_label))
 
 @app.route('/query', methods=['POST'])
 def process_query():
