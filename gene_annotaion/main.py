@@ -86,9 +86,28 @@ def get_nodes():
     
     return nodes
 
+def get_edges():
+    edges = []
+    for key, value in schema.items():
+        if value['represented_as'] == 'edge':
+            label = value.get('output_lable', value['input_label'])
+            edge = {
+                'type': key,
+                'label': label,
+                'source': value.get('source', ''),
+                'target': value.get('target', '')
+            }
+            edges.append(edge)
+    
+    return edges
+
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
     return jsonify(get_nodes())
+
+@app.route('/edges', methods=['GET'])
+def get_edges_endpoint():
+    return jsonify(get_edges())
 
 @app.route('/query', methods=['POST'])
 def process_query():
