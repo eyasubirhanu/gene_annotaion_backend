@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, Response, request, jsonify
 from biocypher import BioCypher
 from metta_generator import generate_metta
 from hyperon import MeTTa
@@ -66,18 +66,23 @@ def parse_and_serialize(input_string):
 
 
 def get_nodes():
-    nodes = []
+    nodes = {}
     for key, value in schema.items():
         if value['represented_as'] == 'node':
             if key in parent_nodes:
                 continue
-            nodes.append({
+            parent = value['is_a']
+            currNode = {
                 'type': key,
+                'is_a': parent,
                 'label': value['input_label'],
                 'properties': value.get('properties', {})
-            })
+            }
+            if parent not in nodes:
+                nodes[parent] = []
+            nodes[parent].append(currNode)
     
-    return nodes
+    return [{'child_nodes': nodes[key], 'parent_node': key} for key in nodes]
 
 def get_edges():
     edges = []
@@ -108,6 +113,7 @@ def get_relations_for_node(node):
                     relation = {
                         'type': key,
                         'label': label,
+                        'is_a': value['is_a'],
                         'source': value.get('source', ''),
                         'target': value.get('target', '')
                     }
@@ -117,7 +123,8 @@ def get_relations_for_node(node):
 
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
-    return jsonify(get_nodes())
+    formatted = json.dumps(get_nodes(), indent=4)
+    return Response(formatted, mimetype='application/json')
 
 @app.route('/edges', methods=['GET'])
 def get_edges_endpoint():
@@ -125,7 +132,8 @@ def get_edges_endpoint():
 
 @app.route('/relations/<node_label>', methods=['GET'])
 def get_relations_for_node_endpoint(node_label):
-    return jsonify(get_relations_for_node(node_label))
+    formatted = json.dumps(get_relations_for_node(node_label), indent=4)
+    return Response(formatted, mimetype='application/json')
 
 @app.route('/query', methods=['POST'])
 def process_query():
