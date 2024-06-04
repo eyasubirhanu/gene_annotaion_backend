@@ -96,3 +96,13 @@ def generate_metta(requests,schema):
 
 # print("\nresult from the metta code:\n",metta.run(generate_metta(requests)))
 
+def generate_propertie_metta(node, schema):
+    node_type = node.split()[0]
+    metta = ""
+    queries = []
+    
+    for propertie in schema[node_type]['properties']:
+        metta = f'''!(match &space ({propertie} ({node}) $value) ({propertie} ({node}) $value))'''
+        queries.append(metta)
+    
+    return queries
