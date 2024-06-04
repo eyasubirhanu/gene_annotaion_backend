@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from biocypher import BioCypher
 from metta_generator import generate_metta
+from metta_generator import generate_propertie_metta
 from hyperon import MeTTa
 import logging
 import json
@@ -115,6 +116,44 @@ def get_relations_for_node(node):
     
     return relations
 
+def serialize_properties(input):
+    pattern =  r'\((\w+) \((\w+ \w+)\) (\w+)\)'
+    matches = re.findall(pattern, input)
+    return matches[0]
+
+def get_properties(results):
+    properties = []
+    for result in results:
+        source = result["source"]
+        source_dict = {"source": source, "source_property": {}}
+        metta_query = generate_propertie_metta(source, schema)
+        
+        for query in metta_query:
+            metta_result = metta.run(query)
+            if (len(metta_result[0]) > 0):
+                str_result = str(metta_result[0][0])
+                tuple_result = serialize_properties(str_result)
+                prop, _, value = tuple_result
+                source_dict["source_property"][prop] = value
+                
+        properties.append(source_dict)
+        
+        target = result["target"]
+        target_dict = {"target": target, "target_property": {}}
+        metta_query = generate_propertie_metta(target, schema)
+        
+        for query in metta_query:
+            metta_result = metta.run(query)
+            if (len(metta_result[0]) > 0):
+                str_result = str(metta_result[0][0])
+                tuple_result = serialize_properties(str_result)
+                prop, _, value = tuple_result
+                target_dict["target_property"][prop] = value
+        properties.append(target_dict)
+    
+    return properties
+
+
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
     return jsonify(get_nodes())
@@ -141,9 +180,11 @@ def process_query():
         # logging.debug(f"query_code: {query_code}")
         result = metta.run(query_code)
         parsed_result = parse_and_serialize(str(result))
+        
+        properties = get_properties(json.loads(parsed_result))
         # logging.debug(f"Generated result Code: {result}")
         # Return the serialized result
-        return jsonify({"Generated query": query_code,"Result": json.loads(parsed_result)})
+        return jsonify({"Generated query": query_code,"Result": json.loads(parsed_result), "Properties": properties})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
