@@ -23,7 +23,8 @@ def validate_request(request, schema, previous_target=None):
     pred_schema = schema[predicate]
     # Check if the source is a continuation from the previous target
     source = request['source']
-    if previous_target and source == previous_target:
+
+    if  previous_target and source == previous_target:
         logging.debug(f"Source {source} is a continuation from the previous target")
     elif not source.startswith('$'):  # Validate source type if not a unique identifier
         source_type = source.split()[0]
@@ -47,7 +48,12 @@ def generate_metta(requests,schema):
     # Validation step
     last_target = None
     all_valid = True
-
+    
+    if 'predicate' in requests[0] and 'source' in requests[0] and 'target' in requests[0]:
+        source = requests[0]['source']
+        target = requests[0]['target']
+        if isinstance(source, dict) and isinstance(target, dict):
+            return generate_by_properties(requests, schema)
     for request in requests:
         print(f"Validating request: {request}")  # Add logging before validation
         if validate_request(request, schema, last_target):
@@ -58,6 +64,8 @@ def generate_metta(requests,schema):
             all_valid = False
             break  
     if all_valid:
+        
+        # start with the only one request
 
         if len(requests) == 1:
             metta = (f'''!(match &space ({requests[0]['predicate'].replace(" ", "_")} ({requests[0]['source']}) {requests[0]['target']}) ({requests[0]['predicate']} ({requests[0]['source']}) {requests[0]['target']}))''')
@@ -95,4 +103,41 @@ def generate_metta(requests,schema):
 
 
 # print("\nresult from the metta code:\n",metta.run(generate_metta(requests)))
+
+def is_request_valid(request):
+    if not request['source']['properties'] and request['source']['id'] is "":
+        return False
+    if request['target']['generated_id'] is "":
+        return False
+    return True
+
+def generate_by_properties(requests, schema):
+    metta = ('''!(match &space (,''') 
+    output = (''' (,''')
+    for request in requests:
+        if not is_request_valid(request):
+            raise Exception("processing stoped due to invalid request")
+        if request['source']['id'] is "":
+            for property, value in request['source']['properties'].items():
+                metta += " " + f'({property} $node {value})'
+        elif not request['source']['id'].startswith('$'):
+              id = request['source']['id']
+              metta += " " + f'($type {id})'
+        
+        predicate = request['predicate'].replace(" ", "_")
+        source = ""
+        if request['source']['id'] is "":
+            source = '$node'
+        elif not request['source']['id'].startswith("$"):
+            source = f"($type {request['source']['id']})"
+        else:
+            source = request['source']['id']
+
+        target = request['target']['generated_id']
+        for property, value in request["target"]['properties'].items():
+              metta += " " + f'({property} {target} {value})'
+        metta  += " " + f'({predicate} {source} {target})'
+        output += " " + f'({predicate} {source} {target})'
+    metta+= f" ) {output}))"
+    return metta 
 
