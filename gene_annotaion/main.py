@@ -143,7 +143,7 @@ def process_query():
         parsed_result = parse_and_serialize(str(result))
         # logging.debug(f"Generated result Code: {result}")
         # Return the serialized result
-        return jsonify({"Generated query": query_code,"Result": json.loads(parsed_result)})
+        return jsonify({"Generated query": query_code, "Result": json.loads(parsed_result)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
