@@ -5,7 +5,8 @@ from typing import List
 import re
 import pickle
 import logging
-
+import string
+import random
 # from utility import get_schema, generate_id
 
 metta = MeTTa()
@@ -105,44 +106,65 @@ def generate_metta(requests,schema):
 # print("\nresult from the metta code:\n",metta.run(generate_metta(requests)))
 
 def is_request_valid(request, schema):
-    if not ('properties' in request['source']['properties'] and "id" in request['source']):
+    if not ('properties' in request['source'] and "id" in request['source']):
         return False
-    if "generated_id" not in request['target'] and request['target']['generated_id'] is "":
+    if "generated_id" not in request['target'] and request['target']['generated_id'] == "":
         return False
     
     source_type = request['source']['type']
-
+    
     for property, _ in request['source']['properties'].items():
-        if (property not in schema[source_type]['properties']):
+        if property not in schema[source_type]['properties']:
             return False
     return True
 
+def generate_random_string():
+    length = 5
+    letters = string.ascii_lowercase
+    random_string = ''.join(random.choice(letters) for i in range(length))
+    return random_string
+
+
 def generate_properties(results, schema):
+    print(type(results))
     metta = ('''!(match &space (,''')
     output = (''' (,''')
 
     for result in results:
-        # TODO do the source
         source = result['source']
         target = result['target']
+
+        print('here')
+
         source_node_type = result['source'].split(' ')[0]
         target_node_type = result['target'].split(' ')[0]
-        for property, value in schema[source_node_type]['properties'].items():
-            metta += " " + f'({property} ({source}))'
+
+        for index, (property, _) in enumerate(schema[source_node_type]['properties'].items()):
+            random = generate_random_string()
+            metta += " " + f'({property} ({source}) ${random}{index})'
+            output += " " + f'({property} ({source}) ${random}{index})'
+
+        for index, (property, _) in enumerate(schema[target_node_type]['properties'].items()):
+            random = generate_random_string()
+            metta += " " + f'({property} ({target}) ${random}{index})'
+            output += " " + f'({property} ({target}) ${random}{index})'
+    metta+= f" ) {output}))"
+
+    return metta
 
 def generate_by_properties(requests, schema):
     metta = ('''!(match &space (,''') 
     output = (''' (,''')
+
     for request in requests:
         if not is_request_valid(request, schema):
             raise Exception("processing stoped due to invalid request")
 
         node_type = request['source']['type']
 
-        if request['source']['id'] is "":
+        if request['source']['id'] == "":
             for property, value in request['source']['properties'].items():
                 metta += " " + f'({property} ({node_type} $id) {value})'
-
         target = request['target']['generated_id']
         for property, value in request["target"]['properties'].items():
               metta += " " + f'({property} {target} {value})'
@@ -150,7 +172,7 @@ def generate_by_properties(requests, schema):
         predicate = request['predicate'].replace(" ", "_")
         source = ""
 
-        if request['source']['id'] is "":
+        if request['source']['id'] == "":
             source = f'({node_type} $id)'
         else:
             source = f"({node_type} {request['source']['id']})"

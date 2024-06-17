@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from biocypher import BioCypher
-from metta_generator import generate_metta
+from metta_generator import generate_metta, generate_properties
 from hyperon import MeTTa
 import logging
 import json
@@ -41,7 +41,7 @@ def load_dataset(path: str) -> None:
     print(f"Finished loading {len(paths)} datasets.")
 
 
-load_dataset("./Data")
+load_dataset("./output")
 
 
 def parse_and_serialize(input_string):
@@ -115,6 +115,15 @@ def get_relations_for_node(node):
     
     return relations
 
+def serialize(input_string):
+        # Remove the outermost brackets and any unwanted characters
+    cleaned_string = re.sub(r"[,\[\]]", "", input_string)
+
+    # Find all tuples using regex
+    tuples = re.findall(r"(\w+)\s+\((\w+)\s+(\w+)\)\s+\((\w+)\s+(\w+)\)", cleaned_string)
+
+    return tuples
+
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
     return jsonify(get_nodes())
@@ -137,13 +146,25 @@ def process_query():
         requests = data['requests']
         # Parse and serialize the received data
         # logging.debug(f"schema: {schema}")
+        queries = []
         query_code = generate_metta(requests, schema)
+
+        queries.append(query_code)
         # logging.debug(f"query_code: {query_code}")
         result = metta.run(query_code)
         parsed_result = parse_and_serialize(str(result))
+
+        query_code = generate_properties(json.loads(parsed_result), schema)
+        result = metta.run(query_code)
+        print(result)
+        queries.append(query_code)
+
+        property_result = serialize(str(result))
+
+        print(property_result)
         # logging.debug(f"Generated result Code: {result}")
         # Return the serialized result
-        return jsonify({"Generated query": query_code, "Result": json.loads(parsed_result)})
+        return jsonify({"Generated query": queries, "Result": json.loads(parsed_result)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
