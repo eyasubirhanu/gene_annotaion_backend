@@ -118,11 +118,17 @@ def get_relations_for_node(node):
 def serialize(input_string):
         # Remove the outermost brackets and any unwanted characters
     cleaned_string = re.sub(r"[,\[\]]", "", input_string)
-
+    pattern = r"(\w+)\s+\(([^)]+)\)\s+(?:(?:\([^)]+\)\s+)*([^)]+))"
     # Find all tuples using regex
-    tuples = re.findall(r"(\w+)\s+\((\w+)\s+(\w+)\)\s+\((\w+)\s+(\w+)\)", cleaned_string)
+    tuples = re.findall(pattern, cleaned_string)
 
     return tuples
+
+def build_property_response(input_tuple):
+    response = []
+    
+    for tuple in input_tuple
+    property, node, value = tuple
 
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
