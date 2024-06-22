@@ -125,10 +125,18 @@ def serialize(input_string):
     return tuples
 
 def build_property_response(input_tuple):
-    response = []
+    nodes = {}
     
-    for tuple in input_tuple
-    property, node, value = tuple
+    for tuple in input_tuple:
+        property_name, node, value = tuple
+        if node not in nodes:
+            nodes[node] = {"node": node, "property": {}}
+        nodes[node]["property"][property_name] = value
+
+    response = list(nodes.values())
+
+    return response
+        
 
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
@@ -162,15 +170,15 @@ def process_query():
 
         query_code = generate_properties(json.loads(parsed_result), schema)
         result = metta.run(query_code)
-        print(result)
+        
         queries.append(query_code)
 
         property_result = serialize(str(result))
 
-        print(property_result)
+        property_response = build_property_response(property_result)
         # logging.debug(f"Generated result Code: {result}")
         # Return the serialized result
-        return jsonify({"Generated query": queries, "Result": json.loads(parsed_result)})
+        return jsonify({"Generated query": queries, "Result": json.loads(parsed_result), "Properties": property_response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
