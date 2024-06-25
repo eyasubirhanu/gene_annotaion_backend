@@ -139,13 +139,11 @@ def generate_random_string():
 
 def generate_properties(results, schema):
     metta = ('''!(match &space (,''')
-    output = (''' (,''')
-    
+    output = (''' (,''') 
     nodes = []
     for result in results:
         source = result['source']
         target = result['target']
-
 
         source_node_type = result['source'].split(' ')[0]
         target_node_type = result['target'].split(' ')[0]

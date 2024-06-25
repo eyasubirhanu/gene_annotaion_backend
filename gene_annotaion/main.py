@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from biocypher import BioCypher
 from metta_generator import generate_metta, generate_properties
-from hyperon import MeTTa
+from hyperon import MeTTa, SymbolAtom, ExpressionAtom, GroundedAtom
 import logging
 import json
 import glob
@@ -126,17 +126,54 @@ def serialize(input_string):
 
 def build_property_response(input_tuple):
     nodes = {}
-    
+    print("building property response")
     for tuple in input_tuple:
-        property_name, node, value = tuple
+        tuple_three = tuple[:3]
+        remaining = tuple[3:]
+        property_name, node, id = tuple_three
+        value_list = list(remaining)
         if node not in nodes:
-            nodes[node] = {"node": node, "property": {}}
-        nodes[node]["property"][property_name] = value
-
+            nodes[node] = {"node": f"{node} {id}", "property": {}}
+        nodes[node]["property"][property_name] = value_list if len(value_list) > 1 else value_list[0]
     response = list(nodes.values())
-
     return response
-        
+
+def recurssive_seralize(metta_expression, result):
+    for node in metta_expression:
+        if isinstance(node, SymbolAtom):
+            result.append(node.get_name())
+        elif isinstance(node, GroundedAtom):
+            result.append(str(node))
+        else:
+            recurssive_seralize(node.get_children(), result)
+    return result
+
+def convert_metta(metta_result):
+    result = []
+
+    for node in metta_result:
+        node = node.get_children()
+        for metta_symbol in node:
+            if isinstance(metta_symbol, SymbolAtom) and  metta_symbol.get_name() == ",":
+                continue
+            if isinstance(metta_symbol, ExpressionAtom):
+                res = recurssive_seralize(metta_symbol.get_children(), [])
+                result.append(tuple(res))
+    return result
+
+def build_query_response(tuples): 
+    result = []
+    for tuple in tuples:
+        predicate, src_type, src_id, tgt_type, tgt_id = tuple
+        result.append({
+            "id": str(uuid.uuid4()),
+            "predicate": predicate,
+            "source": f"{src_type} {src_id}",
+            "target": f"{tgt_type} {tgt_id}"
+        })
+
+    return result 
+
 
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
@@ -166,19 +203,21 @@ def process_query():
         queries.append(query_code)
         # logging.debug(f"query_code: {query_code}")
         result = metta.run(query_code)
-        parsed_result = parse_and_serialize(str(result))
-
-        query_code = generate_properties(json.loads(parsed_result), schema)
+        
+        parsed_result = convert_metta(result[0])
+        
+        parsed_result = build_query_response(parsed_result)
+        query_code = generate_properties(parsed_result, schema)
         result = metta.run(query_code)
         
         queries.append(query_code)
-
-        property_result = serialize(str(result))
+        property_result = convert_metta(result[0])
 
         property_response = build_property_response(property_result)
+
         # logging.debug(f"Generated result Code: {result}")
         # Return the serialized result
-        return jsonify({"Generated query": queries, "Result": json.loads(parsed_result), "Properties": property_response})
+        return jsonify({"Generated query": queries, "Result": parsed_result, "Properties": property_response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
