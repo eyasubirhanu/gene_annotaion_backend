@@ -80,6 +80,7 @@ def get_nodes():
     return nodes
 
 def get_edges():
+    print(schema["transcribed to"])
     edges = []
     for key, value in schema.items():
         if value['represented_as'] == 'edge':
@@ -126,15 +127,33 @@ def serialize(input_string):
 
 def build_property_response(input_tuple):
     nodes = {}
+    unique_relationships = set()
     print("building property response")
     for tuple in input_tuple:
-        tuple_three = tuple[:3]
-        remaining = tuple[3:]
-        property_name, node, id = tuple_three
-        value_list = list(remaining)
-        if node not in nodes:
-            nodes[node] = {"node": f"{node} {id}", "property": {}}
-        nodes[node]["property"][property_name] = value_list if len(value_list) > 1 else value_list[0]
+        tp = tuple[0]
+        if tp == "node":
+            tuple_three = tuple[1:4]
+            remaining = tuple[4:]
+            property_name, node, id = tuple_three
+            value_list = list(remaining)
+    
+            if node not in nodes:
+                nodes[node] = {"node": f"{node} {id}", "property": {}}
+            nodes[node]["property"][property_name] = value_list if len(value_list) > 1 else value_list[0]
+        else:
+            tuple_six = tuple[1:7]
+            remaining = tuple[7:]
+            value_list = list(remaining)
+            property_name, predicate, source, source_id, target, target_id = tuple_six
+
+            relationship_key = (predicate, f"{source} {source_id}", f"{target} {target_id}")
+
+            if relationship_key not in unique_relationships:
+                nodes[predicate] = {"relationship": f"{predicate}", "nodes": [], "property": {}}
+                unique_relationships.add(relationship_key)
+                nodes[predicate]["nodes"].extend([{"node": f"{source} {source_id}"}, {"node": f"{target} {target_id}"}])
+            nodes[predicate]["property"][property_name] = value_list if len(value_list) > 1 else value_list[0]
+
     response = list(nodes.values())
     return response
 
@@ -212,6 +231,7 @@ def process_query():
         
         queries.append(query_code)
         property_result = convert_metta(result[0])
+        print(property_result)    
 
         property_response = build_property_response(property_result)
 

@@ -152,15 +152,22 @@ def generate_properties(results, schema):
             for property, _ in schema[source_node_type]['properties'].items():
                 random = generate_random_string()
                 metta += " " + f'({property} ({source}) ${random})'
-                output += " " + f'({property} ({source}) ${random})'
+                output += " " + f'(node {property} ({source}) ${random})'
             nodes.append(source)
         
         if target not in nodes:
             for property, _ in schema[target_node_type]['properties'].items():
                 random = generate_random_string()
                 metta += " " + f'({property} ({target}) ${random})'
-                output += " " + f'({property} ({target}) ${random})'
+                output += " " + f'(node {property} ({target}) ${random})'
             nodes.append(target)
+        
+        predicate = result['predicate']
+        predicate_schema = ' '.join(predicate.split('_'))
+        for property, _ in schema[predicate_schema]['properties'].items():
+            random = generate_random_string()
+            metta += " " + f'({property} ({predicate} ({source}) ({target})) ${random})'
+            output +=  " " + f'(edge {property} ({predicate} ({source}) ({target})) ${random})' 
 
     metta+= f" ) {output}))"
 
