@@ -1,0 +1,6 @@
+2024-06-16 17:35:27,061	INFO	module:_logger
+This is BioCypher v0.5.42.
+2024-06-16 17:35:27,062	INFO	module:_logger
+Logging into `biocypher-log/biocypher-20240616-173527.log`.
+2024-06-16 17:36:01,464	INFO	module:_core
+Running BioCypher with schema configuration from ./config/schema_config.yaml.

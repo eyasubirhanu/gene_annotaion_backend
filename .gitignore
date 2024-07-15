@@ -1,0 +1,6 @@
+./output/
+./output.zip/
+./__pycache__/
+./biocypher-log/
+./dataset
+
