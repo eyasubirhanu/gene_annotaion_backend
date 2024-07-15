@@ -41,11 +41,8 @@ def process_query():
             
         response_data = {
             # "Generated query": query_code,
-            "Result": parsed_result_list,
-            "Properties": {
-                "nodes": parsed_properties[0],
-                "edges": parsed_properties[1]
-            }
+            "nodes": parsed_properties[0],
+            "edges": parsed_properties[1]
         }
         formatted_response = json.dumps(response_data, indent=None) # removed indent=4 because am getting /n on the response
         return Response(formatted_response, mimetype='application/json')
