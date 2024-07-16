@@ -49,34 +49,43 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         nodes = data['nodes']
 
         metta_output = '''!(match &space (,'''
-        output = ''' (,'''  
+        output = ''' (,'''
 
-                # if there is no predicate
+        # Create a mapping from node_id to node
+        node_map = {node['node_id']: node for node in nodes}
+        print("node_map",node_map)
+        
+        node_without_predicate = None
+        predicates = None
         if "predicates" not in data:
-            for node in nodes:
+            node_without_predicate = nodes
+        else:
+             predicates = data['predicates']
+             node_with_predicate = set()
+             for predicate in predicates:
+                node_with_predicate.add(predicate["source"])
+                node_with_predicate.add(predicate["target"])
+             node_without_predicate = [node for node in nodes if node["node_id"] not in node_with_predicate]
+
+        # if there is no predicate
+        if "predicates" not in data or (node_without_predicate is not None and len(node_without_predicate) != 0):
+            for node in node_without_predicate:
                 node_type = node["type"]
                 node_id = node["node_id"]
                 node_identifier = '$' + node["node_id"]
                 if node["id"]:
                     essemble_id = node["id"]
-                    metta_output += " " + f'({node_type} {essemble_id})'
-                    output += " " + f'({node_type} {essemble_id})'
+                    metta_output += f' ({node_type} {essemble_id})'
+                    output += f' ({node_type} {essemble_id})'
                 else:
                     if len(node["properties"]) == 0:
-                        metta_output += " " + f'({node_type} ${node_id})'
+                        metta_output += f' ({node_type} ${node_id})'
                     else:
                         metta_output += self.construct_node_representation(node, node_identifier)
-                    output += " " + f'({node_type} {node_identifier})'
-            metta_output += f" ) {output}))"
-
-            print(metta_output)
+                    output += f' ({node_type} {node_identifier})'
+        
+        if predicates is None:
             return metta_output
-
-        predicates = data['predicates']
-
-        # Create a mapping from node_id to node
-        node_map = {node['node_id']: node for node in nodes}
-        print("node_map",node_map)
 
         for predicate in predicates:
             predicate_type = predicate['type'].replace(" ", "_")
@@ -175,8 +184,8 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                 if key not in relationships_dict:
                     relationships_dict[key] = {
                         "label": predicate,
-                        "source": f"{source} {source_id}",
-                        "target": f"{target} {target_id}",
+                        "source_node": f"{source} {source_id}",
+                        "target_node": f"{target} {target_id}",
                     }
                 relationships_dict[key][property_name] = value
 
