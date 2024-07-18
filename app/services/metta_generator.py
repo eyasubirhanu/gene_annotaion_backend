@@ -5,7 +5,7 @@ import re
 import json
 import uuid
 from .query_generator_interface import QueryGeneratorInterface
-from app.lib import validate_request
+from app.lib import validate_request 
 
 class MeTTa_Query_Generator(QueryGeneratorInterface):
     def __init__(self, dataset_path: str):
@@ -126,7 +126,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
     def run_query(self, query_code):
         return self.metta.run(query_code)
 
-    def parse_and_serialize(self, input):
+    def parse_and_serialize(self, input, schema):
         result = []
 
         tuples = self.metta_seralizer(input[0])
@@ -145,13 +145,16 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                 "source": f"{src_type} {src_id}",
                 "target": f"{tgt_type} {tgt_id}"
                 })
-        return result 
+        
+        query = self.get_node_properties(result, schema)
+        result = self.run_query(query)
+        result = self.parse_and_serialize_properties(result[0])
 
+        return result
         
     # def parse_metta(self, input_string):
     #     parsed_metta = self.metta.parse_all(input_string)
     #     print("parsed_metta",parsed_metta)
-
     def parse_and_serialize_properties(self, input):
         nodes = {}
         relationships_dict = {}

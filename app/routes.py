@@ -26,7 +26,7 @@ def process_query():
     data = request.get_json()
     if not data or 'requests' not in data:
         return jsonify({"error": "Missing requests data"}), 400
-    database_type = 'metta'# data.get('database')
+    database_type = 'cypher'# data.get('database')
     # if not database_type or database_type not in databases:
     #     return jsonify({"error": "Invalid or missing database parameter"}), 400
     try:
@@ -34,15 +34,12 @@ def process_query():
         requests = data['requests']
         query_code = db_instance.query_Generator(requests, schema_manager.schema)
         result = db_instance.run_query(query_code)
-        parsed_result_list = db_instance.parse_and_serialize(result)
-        property_query= db_instance.get_node_properties(parsed_result_list, schema_manager.schema)
-        properties = db_instance.run_query(property_query)
-        parsed_properties = db_instance.parse_and_serialize_properties(properties[0])
+        parsed_result = db_instance.parse_and_serialize(result, schema_manager.schema)
             
         response_data = {
             # "Generated query": query_code,
-            "nodes": parsed_properties[0],
-            "edges": parsed_properties[1]
+            "nodes": parsed_result[0],
+            "edges": parsed_result[1]
         }
         formatted_response = json.dumps(response_data, indent=None) # removed indent=4 because am getting /n on the response
         return Response(formatted_response, mimetype='application/json')
