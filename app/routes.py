@@ -32,7 +32,7 @@ def process_query():
     try:
         db_instance = databases[database_type]
         requests = data['requests']
-        query_code = db_instance.query_Generator(requests)
+        query_code = db_instance.query_Generator(requests, schema_manager.schema)
         result = db_instance.run_query(query_code)
         parsed_result_list = db_instance.parse_and_serialize(result)
         property_query= db_instance.get_node_properties(parsed_result_list, schema_manager.schema)
