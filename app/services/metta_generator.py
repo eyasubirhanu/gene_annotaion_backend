@@ -1,12 +1,11 @@
 import glob
 import os
-from hyperon import MeTTa
+from hyperon import MeTTa, SymbolAtom, ExpressionAtom, GroundedAtom
 import re
 import json
 import uuid
 from .query_generator_interface import QueryGeneratorInterface
-from app.lib import metta_seralizer
-# from app.services.util import generate_id
+from app.lib import validate_request
 
 class MeTTa_Query_Generator(QueryGeneratorInterface):
     def __init__(self, dataset_path: str):
@@ -47,13 +46,16 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
 
     def query_Generator(self, data, schema):
 
-        node_map = self.validate_request(data, schema)
+        node_map = validate_request(data, schema)
+
+        if node_map is None:
+            raise Exception('error')
+
         nodes = data['nodes']
 
         metta_output = '''!(match &space (,'''
         output = ''' (,'''
-
-        print("node_map",node_map) 
+ 
         node_without_predicate = None
         predicates = None
         if "predicates" not in data:
@@ -127,7 +129,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
     def parse_and_serialize(self, input):
         result = []
 
-        tuples = metta_seralizer(input[0])
+        tuples = self.metta_seralizer(input[0])
         for tuple in tuples:
             if len(tuple) == 2:
                 src_type, src_id = tuple
@@ -154,7 +156,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         nodes = {}
         relationships_dict = {}
         result = []
-        tuples = metta_seralizer(input)
+        tuples = self.metta_seralizer(input)
         print("result", tuples)
 
         for match in tuples:
@@ -230,56 +232,27 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         metta+= f" ) {output}))"
 
         return metta
-    def validate_request(self, request, schema):
-        if 'nodes' not in request:
-            raise Exception("node is missing")
 
-        nodes = request['nodes']
-        
-        # validate nodes
-        if not isinstance(nodes, list):
-            raise Exception("nodes should be a list")
+    def recurssive_seralize(self, metta_expression, result):
+        for node in metta_expression:
+            if isinstance(node, SymbolAtom):
+             result.append(node.get_name())
+            elif isinstance(node, GroundedAtom):
+                result.append(str(node))
+            else:
+                self.recurssive_seralize(node.get_children(), result)
+        return result
 
-        for node in nodes:
-            if not isinstance(node, dict):
-                raise Exception("Each node must be a dictionary")
-            if 'id' not in node:
-                raise Exception("id is required!")
-            if 'type' not in node or node['type'] == "":
-                raise Exception("type is required")
-            if 'node_id' not in node or node['node_id'] == "":
-                raise Exception("node_id is required")
-            if 'properties' not in node:
-                raise Exception("properties is required")
-        
-        # validate properties of nodes
-        for node in nodes:
-            properties = node['properties']
-            node_type = node['type']
-            for property in properties.keys():
-                if property not in schema[node_type]['properties']:
-                    raise Exception(f"{property} doesn't exsist in the schema!")
+    def metta_seralizer(self, metta_result):
+        result = []
 
-        node_map = {node['node_id']: node for node in nodes}
-        # validate predicates
-        if 'predicates' in request:
-            predicates = request['predicates']
-            
-            if not isinstance(predicates, list):
-                raise Exception("Predicate should be a list")
-            for predicate in predicates:
-                if 'type' not in predicate or predicate['type'] == "":
-                    raise Exception("predicate type is required")
-                if 'source' not in predicate or predicate['source'] == "":
-                    raise Exception("source is required")
-                if 'target' not in predicate or predicate['target'] == "":
-                    raise Exception("target is required")
-                
-                predicate_schema = schema[predicate['type']]
-                
-                source_type = node_map[predicate['source']]['type']
-                target_type = node_map[predicate['target']]['type']
+        for node in metta_result:
+            node = node.get_children()
+            for metta_symbol in node:
+                if isinstance(metta_symbol, SymbolAtom) and  metta_symbol.get_name() == ",":
+                    continue
+                if isinstance(metta_symbol, ExpressionAtom):
+                    res = self.recurssive_seralize(metta_symbol.get_children(), [])
+                    result.append(tuple(res))
+        return result
 
-                if predicate_schema['source'] != source_type or predicate_schema['target'] != target_type:
-                    raise Exception(f"{predicate['type']} have source as {predicate_schema['source']} and target as {predicate_schema['target']}")
-        return node_map    

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class QueryGeneratorInterface(ABC):
     @abstractmethod
-    def query_Generator(self, requests, schema):
+    def query_Generator(self, data, schema):
         pass
 
     @abstractmethod
@@ -19,8 +19,4 @@ class QueryGeneratorInterface(ABC):
 
     @abstractmethod
     def get_node_properties(self, results, schema):
-        pass
-
-    @abstractmethod
-    def validate_request(self, request, schema):
         pass
