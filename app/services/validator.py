@@ -12,12 +12,22 @@ def validate_request(requests):
         logging.debug("Request is missing nodes or predicates.")
         return False, "Request is missing nodes or predicates."
 
-    node_dict = {node['node_id']: node for node in nodes}
+    # node_dict = {node['node_id']: node for node in nodes}
+    node_dict = {}
+    node_ids = set()
 
     for node in nodes:
+        node_id = node.get('node_id')
         if not node['node_id'] or not node['type'] or not node.get('id'):
             logging.debug(f"Node missing required fields: {node}")
             return False, f"Node missing required fields: {node}"
+        
+        if node_id in node_ids:
+            return False, f"Duplicate node_id found: {node_id}"
+        
+        node_ids.add(node_id)
+        node_dict[node_id] = node
+        
 
     for predicate in predicates:
         if not predicate.get('type') or not predicate.get('source') or not predicate.get('target'):
