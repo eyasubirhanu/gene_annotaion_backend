@@ -1,0 +1,9 @@
+./output/
+./output.zip/
+./__pycache__/
+./biocypher-log/
+dataset/
+myenv
+.env
+biocypher-log
+__pycache__

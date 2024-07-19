@@ -1,63 +1,279 @@
-curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d "{\"requests\":[{\"predicate\":\"transcribed_to\", \"source\":\"gene ENSG00000166913\", \"target\":\"\$b60385cc\"}]}"
-
-
-
-
-
-curl -X POST http://localhost:5000/query \
--H "Content-Type: application/json" \
--d '{
-  "requests": [
-    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
-    {"predicate": "translates to", "source": "$b60385cc", "target": "$d2044ee8"},
-    {"predicate": "gene to pathway association", "source": "gene ENSG00000166913", "target": "$fa91b28c"}
-  ]
-}'
-
-
-
-curl -X POST http://localhost:5000/query \
--H "Content-Type: application/json" \
--d '{
-  "requests": [
-    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
-    {"predicate": "translates to", "source": "$b60385cc", "target": "$d2044ee8"}
-  ]
-}'
-
-Errors:
-
-curl -X POST http://localhost:5000/query \
--H "Content-Type: application/json" \
--d '{
-  "requests": [
-    {"predicate": "transcribed_to", "source": "gene ENSG00000166913", "target": "$b60385cc"}
-  ]
-}'
-
-
-curl -X POST http://localhost:5000/query \
--H "Content-Type: application/json" \
--d '{
-  "requests": [
-    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
-    {"predicate": "translates_to", "source": "$b60385cc", "target": "$d2044ee8"}
-  ]
-}'
-
-curl -X POST http://localhost:5000/query \
--H "Content-Type: application/json" \
--d '{
-  "requests": [
-    {"predicate": "transcribed to", "source": "gene ENSG00000166913", "target": "$b60385cc"},
-    {"predicate": "translates to", "source": "$b60385cc", "target": "$d2044ee8"},
-    {"predicate": "genes pathways", "source": "gene ENSG00000166913", "target": "$fa91b28c"}
-  ]
-}'
-
-
 curl -X GET http://localhost:5000/nodes 
 
 curl -X GET http://localhost:5000/edges
 
 curl -X GET http://localhost:5000/relations/gene
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": [
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "",
+        "type": "gene",
+        "properties": {
+          "chr": "chr20"
+        }
+      },
+      "target": {
+        "id": "$23f23",
+        "type": "",
+        "properties": {}
+      }                                       
+    },
+    {
+      "predicate": "translates to",
+      "source": {
+        "id": "$23f23",
+        "type": "",
+        "properties": {}
+      },
+      "target": {
+        "generated_id": "$34f5345",
+        "type": "",
+        "properties": {}
+      }
+    }
+  ]    
+}'
+
+
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": [
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "",
+        "type": "gene",
+        "properties": {
+          "chr": "chr20",
+          "gene_type": "lncRNA"
+        }
+      },
+      "target": {
+        "generated_id": "",
+        "type": "transcript",
+        "properties": {
+           "chr": "chr20",
+           "transcript_name": "SNAP25-AS1-210"
+        }
+      }                                       
+    }
+  ]    
+}'
+
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": [
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "",
+        "type": "gene",
+        "properties": {
+          "chr": "chr20"
+        }
+      },
+      "target": {
+        "generated_id": "$23f23",
+        "type": "",
+        "properties": {}
+      }                                       
+    },
+    {
+      "predicate": "translates to",
+      "source": {
+        "id": "$23f23",
+        "type": "",
+        "properties": {}
+      },
+      "target": {
+        "generated_id": "",
+        "type": "protein",
+        "properties": {
+          "protein_name": "MKKS"
+        }
+      }
+    }
+  ]    
+}'
+
+
+
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": [
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "",
+        "type": "gene",
+        "properties": {}
+      },
+      "target": {
+        "id": "$34dg345",
+        "type": "",
+        "properties": {}
+      }                                       
+    }
+  ]    
+}'
+
+
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": [
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "gene ENSG00000125863",
+        "node_id": "N1",
+        "type": "",
+        "properties": {}
+      },
+      "target": {
+        "node_id": "N2",
+        "type": "",
+        "properties": {}
+      }                                       
+    }
+  ]    
+}'
+
+
+`{
+	nodes: [
+		{
+			node_id: 'n1',
+      "id"
+			type: 'gene'
+			properties: {}
+		},
+		{
+			node_id: 'n2',
+			type: 'transcript'
+			properties: {}
+		},
+    {
+			node_id: 'n3',
+			type: 'transcript'
+			properties: {}
+		}
+	],
+	predicates: [
+		{type: 'transcribed to', source: n1, target: n2},
+		{type: 'translates to', source: n1, target: n3},
+	]
+}`
+
+
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": [
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "gene ENSG00000125863",
+        "type": "gene",
+        "properties": {}
+      },
+      "target": {
+        "generated_id": "$34dg345",
+        "type": "",
+        "properties": {}
+      }                                       
+    },
+    {
+      "predicate": "coexpressed with",
+      "source": {
+        "id": "gene ENSG00000121410",
+        "type": "gene",
+        "properties": {}
+      },
+      "target":{
+        "generated_id": "$34dg34u5",
+        "type": "",
+        "properties": {}
+      }    
+    }
+  ]    
+}'
+
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": [
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "",
+        "type": "gene",
+        "properties": {}
+      },
+      "target": {
+        "id": "",
+        "node_id":"n2",
+        "type": "transcript",
+        "properties": {}
+      }
+    },
+    {
+      "predicate": "transcribed to",
+      "source": {
+        "id": "",
+        "type": "gene",
+        "properties": {}
+      },
+      "target":  {
+        "id": "",
+        "node_id":"n2",
+        "type": "transcript",
+        "properties": {}
+      }
+    }
+  ]
+}'
+
+
+
+
+
+curl -X POST http://localhost:5000/query -H "Content-Type: application/json" -d '{
+  "requests": {
+    "nodes": [
+      {
+        "node_id": "n1",
+        "id": "",
+        "type": "gene",
+        "properties": {}
+      },
+      {
+        "node_id": "n2",
+        "id": "",
+        "type": "transcript",
+        "properties": {}
+      },
+      {
+        "node_id": "n3",
+        "id": "",
+        "type": "protein",
+          "properties": {
+          "protein_name": "MKKS"
+        }
+      }
+    ],
+    "predicates": [
+      {
+        "type": "transcribed to",
+        "source": "n1",
+        "target": "n2"
+      },
+      {
+        "type": "translates to",
+        "source": "n2",
+        "target": "n3"
+      }
+    ]
+  }
+}'
+
