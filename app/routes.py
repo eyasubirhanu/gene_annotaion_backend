@@ -1,0 +1,83 @@
+from app.services.validator import validate_request
+from flask import Flask, request, jsonify, Response
+import logging
+import json
+from app import app, databases, schema_manager
+import itertools
+# Setup basic logging
+logging.basicConfig(level=logging.DEBUG)
+
+@app.route('/nodes', methods=['GET'])
+def get_nodes_endpoint():
+    nodes = json.dumps(schema_manager.get_nodes(), indent=4)
+    return Response(nodes, mimetype='application/json')
+
+@app.route('/edges', methods=['GET'])
+def get_edges_endpoint():
+    edges = json.dumps(schema_manager.get_edges(), indent=4)
+    return Response(edges, mimetype='application/json')
+
+@app.route('/relations/<node_label>', methods=['GET'])
+def get_relations_for_node_endpoint(node_label):
+    relations = json.dumps(schema_manager.get_relations_for_node(node_label), indent=4)
+    return Response(relations, mimetype='application/json')
+
+@app.route('/query', methods=['POST'])
+def process_query():
+    data = request.get_json()
+    if not data or 'requests' not in data:
+        return jsonify({"error": "Missing requests data"}), 400
+    database_type = 'metta'# data.get('database')
+    # if not database_type or database_type not in databases:
+    #     return jsonify({"error": "Invalid or missing database parameter"}), 400
+    try:
+        db_instance = databases[database_type]
+        requests = data['requests']
+        query_code = db_instance.query_Generator(requests)
+        result = db_instance.run_query(query_code)
+        parsed_result_list = db_instance.parse_and_serialize(result)
+        property_query= db_instance.get_node_properties(parsed_result_list, schema_manager.schema)
+        properties = db_instance.run_query(property_query)
+        parsed_properties = db_instance.parse_and_serialize_properties(properties[0])
+            
+        response_data = {
+            # "Generated query": query_code,
+            "nodes": parsed_properties[0],
+            "edges": parsed_properties[1]
+        }
+        formatted_response = json.dumps(response_data, indent=None) # removed indent=4 because am getting /n on the response
+        return Response(formatted_response, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/query_cypher', methods=['POST'])
+def process_querys():
+    data = request.get_json()
+
+    if not data or 'requests' not in data:
+        return jsonify({"error": "Missing requests data"}), 400
+    
+    database_type = 'cypher'
+    requests = data['requests']
+
+    is_valid, validation_message = validate_request(requests)
+
+    if not is_valid:
+        return jsonify({"error": f"Validation Failed: {validation_message}"}), 400
+
+    try:
+        db_instance = databases[database_type]
+        query_code = db_instance.query_Generator(requests)  
+        results = db_instance.run_query(query_code[0])
+        parsed_result = db_instance.parse_and_serialize(results)
+
+        response_data = {
+            "Results": {
+                "nodes": parsed_result["nodes"],
+                "edges": parsed_result["edges"]
+            }
+        }
+        formatted_response = json.dumps(response_data, indent=None) 
+        return Response(formatted_response, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
