@@ -1,13 +1,16 @@
-from typing import List
+from typing import List, Dict, Tuple
 import logging
+import os
+import glob
+import json
+import uuid
 from dotenv import load_dotenv
 import neo4j
-from app.services.query_generator_interface import QueryGeneratorInterface
 from neo4j import GraphDatabase
-import glob
-import os
-import json
 from neo4j.graph import Node, Relationship
+from app.services.query_generator_interface import QueryGeneratorInterface
+from app.lib import validate_request
+
 
 load_dotenv()
 
@@ -15,13 +18,16 @@ class CypherQueryGenerator(QueryGeneratorInterface):
     def __init__(self, dataset_path: str):
         self.driver = GraphDatabase.driver(
             os.getenv('NEO4J_URI'),
-            auth=(os.getenv('NEO4J_USER'), os.getenv('NEO4J_PASSWORD'))
+            auth=(os.getenv('NEO4J_USERNAME'), os.getenv('NEO4J_PASSWORD'))
         )
         # self.dataset_path = dataset_path
         # self.load_dataset(self.dataset_path)
 
     def close(self):
         self.driver.close()
+
+    def generate_id(self):
+        return str(uuid.uuid4())[:8]
 
     def load_dataset(self, path: str) -> None:
         if not os.path.exists(path):
@@ -61,17 +67,22 @@ class CypherQueryGenerator(QueryGeneratorInterface):
 
     def run_query(self, query_code):
         with self.driver.session() as session:
-            results = session.run(query_code)
+            results = session.run(query_code[0])
             result_list = [record for record in results]
             return result_list
 
-    def query_Generator(self, requests):
+    def query_Generator(self, requests, schema):
+        all_valid = True
+        node_map = validate_request(requests, schema)
+        
+        if node_map is None:
+            all_valid = False
+            raise Exception('error')
+
         nodes = requests['nodes']
         predicates = requests['predicates']
 
         cypher_queries = []
-        all_valid = True
-        node_dict = {node['node_id']: node for node in nodes}
 
         if all_valid:
             match_clauses = []
@@ -82,8 +93,8 @@ class CypherQueryGenerator(QueryGeneratorInterface):
 
             for i, predicate in enumerate(predicates):
                 predicate_type = predicate['type'].replace(" ", "_")
-                source_node = node_dict[predicate['source']]
-                target_node = node_dict[predicate['target']]
+                source_node = node_map[predicate['source']]
+                target_node = node_map[predicate['target']]
 
                 if i == 0:
                     source_var = 's0'
@@ -101,7 +112,7 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                 used_nodes.add(predicate['source'])
                 used_nodes.add(predicate['target'])
             
-            for node_id, node in node_dict.items():
+            for node_id, node in node_map.items():
                 if node_id not in used_nodes:
                     var_name = f"n_{node_id}"
                     match_clauses.append(self.match_node(node, var_name))
@@ -138,7 +149,9 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                     node_id = f"{list(item.labels)[0]} {item['id']}"
                     if node_id not in node_dict:
                         node_data = {
+                            "id": self.generate_id(),
                             "data": {
+                                "id_n":item.id,
                                 "id": node_id,
                                 "type": list(item.labels)[0],
                                 **item
@@ -150,11 +163,12 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                     source_id = f"{list(item.start_node.labels)[0]} {item.start_node['id']}"
                     target_id = f"{list(item.end_node.labels)[0]} {item.end_node['id']}"
                     edge_data = {
+                        "id": self.generate_id(),
                         "data": {
                             "id": item.id,
-                            "source": source_id,
-                            "target": target_id,
                             "label": item.type,
+                            "source_node": source_id,
+                            "target_node": target_id,
                             **item
                         }
                     }
@@ -163,13 +177,7 @@ class CypherQueryGenerator(QueryGeneratorInterface):
         return {"nodes": nodes, "edges": edges}
 
 
-    def parse_and_serialize(self, input):
+    def parse_and_serialize(self, input,schema):
         parsed_result = self.parse_neo4j_results(input)
-        return parsed_result
+        return parsed_result["nodes"], parsed_result["edges"]
 
-    def parse_and_serialize_properties(self, input_string):
-        return json.dumps(json.loads(input_string), indent=4)
-    
-    def get_node_properties(self, results, schema):
-        # Your implementation to get node properties from results
-        pass
