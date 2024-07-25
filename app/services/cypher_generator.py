@@ -151,7 +151,6 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                         node_data = {
                             "id": self.generate_id(),
                             "data": {
-                                "id_n":item.id,
                                 "id": node_id,
                                 "type": list(item.labels)[0],
                                 **item
