@@ -33,14 +33,14 @@ _Supported OS:_ **Linux & Mac**
 3. **Choose Your Database Type**
    Open app/routes.py and update database_type at line 28:
 
-- To use Metta, set database_type to 'metta'.
-- To use Neo4j, set database_type to 'cypher'.
+   - To use Metta, set database_type to 'metta'.
+   - To use Neo4j, set database_type to 'cypher'.
 
 Example
 
-    ```
-    database_type = 'metta'  # Use 'cypher' for Neo4j
-    ```
+   ```python
+   database_type = 'metta'  # Use 'cypher' for Neo4j
+   ```
 
 4. **Build and Run the Docker Container**
 
