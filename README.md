@@ -30,7 +30,19 @@ _Supported OS:_ **Linux & Mac**
    NEO4J_PASSWORD=<neo4j-password>
    ```
 
-3. **Build and Run the Docker Container**
+3. **Choose Your Database Type**
+   Open app/routes.py and update database_type at line 28:
+
+- To use Metta, set database_type to 'metta'.
+- To use Neo4j, set database_type to 'cypher'.
+
+Example
+
+    ```
+    database_type = 'metta'  # Use 'cypher' for Neo4j
+    ```
+
+4. **Build and Run the Docker Container**
 
    Ensure you are in the root directory of the project and then run:
 
