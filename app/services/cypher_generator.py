@@ -2,6 +2,7 @@ from typing import List
 import logging
 from dotenv import load_dotenv
 import neo4j
+from app.lib.validator import validate_request
 from app.services.query_generator_interface import QueryGeneratorInterface
 from neo4j import GraphDatabase
 import glob
@@ -61,60 +62,66 @@ class CypherQueryGenerator(QueryGeneratorInterface):
 
     def run_query(self, query_code):
         with self.driver.session() as session:
-            results = session.run(query_code)
+            results = session.run(query_code[0])
             result_list = [record for record in results]
             return result_list
 
-    def query_Generator(self, requests,schema):
-        nodes = requests['nodes']
+    def query_Generator(self, requests, schema):
+
+        node_dict = validate_request(requests, schema)
+
+        if (node_dict is None):
+            #logging.debug("Processing stopped due to invalid request")
+            raise Exception("Processing stopped do to invalid request")
+        #nodes = requests['nodes']
         predicates = requests['predicates']
-
+        
         cypher_queries = []
-        all_valid = True
-        node_dict = {node['node_id']: node for node in nodes}
+        #all_valid = True
+        #node_dict = {node['node_id']: node for node in nodes}
+    
+        
+        match_clauses = []
+        return_clauses = []
 
-        if all_valid:
-            match_clauses = []
-            return_clauses = []
+        # Track nodes that are included in relationships
+        used_nodes = set()
 
-            # Track nodes that are included in relationships
-            used_nodes = set()
+        for i, predicate in enumerate(predicates):
+            predicate_type = predicate['type'].replace(" ", "_")
+            source_node = node_dict[predicate['source']]
+            target_node = node_dict[predicate['target']]
 
-            for i, predicate in enumerate(predicates):
-                predicate_type = predicate['type'].replace(" ", "_")
-                source_node = node_dict[predicate['source']]
-                target_node = node_dict[predicate['target']]
+            if i == 0:
+                source_var = 's0'
+                source_match = self.match_node(source_node, source_var)
+                match_clauses.append(source_match)
+            else:
+                source_var = f"t{i-1}"
 
-                if i == 0:
-                    source_var = 's0'
-                    source_match = self.match_node(source_node, source_var)
-                    match_clauses.append(source_match)
-                else:
-                    source_var = f"t{i-1}"
+            target_var = f"t{i}"
+            target_match = self.match_node(target_node, target_var)
 
-                target_var = f"t{i}"
-                target_match = self.match_node(target_node, target_var)
+            match_clauses.append(f"({source_var})-[r{i}:{predicate_type}]->{target_match}")
+            return_clauses.append(f"r{i}")
 
-                match_clauses.append(f"({source_var})-[r{i}:{predicate_type}]->{target_match}")
-                return_clauses.append(f"r{i}")
-
-                used_nodes.add(predicate['source'])
-                used_nodes.add(predicate['target'])
+            used_nodes.add(predicate['source'])
+            used_nodes.add(predicate['target'])
             
-            for node_id, node in node_dict.items():
-                if node_id not in used_nodes:
-                    var_name = f"n_{node_id}"
-                    match_clauses.append(self.match_node(node, var_name))
-                    return_clauses.append(var_name)
+        for node_id, node in node_dict.items():
+            if node_id not in used_nodes:
+                var_name = f"n_{node_id}"
+                match_clauses.append(self.match_node(node, var_name))
+                return_clauses.append(var_name)
 
-            return_clauses.extend([f"s0"] + [f"t{i}" for i in range(len(predicates))])
+        return_clauses.extend([f"s0"] + [f"t{i}" for i in range(len(predicates))])
 
-            match_clause = "MATCH " + ", ".join(match_clauses)
-            return_clause = "RETURN " + ", ".join(return_clauses)
-            cypher_query = f"{match_clause} {return_clause}"
-            cypher_queries.append(cypher_query)
-        else:
-            logging.debug("Processing stopped due to invalid request.")
+        match_clause = "MATCH " + ", ".join(match_clauses)
+        return_clause = "RETURN " + ", ".join(return_clauses)
+        cypher_query = f"{match_clause} {return_clause}"
+        cypher_queries.append(cypher_query)
+        
+        #logging.debug("Processing stopped due to invalid request.")
         return cypher_queries
 
     
@@ -152,9 +159,9 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                     edge_data = {
                         "data": {
                             "id": item.id,
-                            "source": source_id,
-                            "target": target_id,
                             "label": item.type,
+                            "source_node": source_id,
+                            "target_node": target_id,
                             **item
                         }
                     }
@@ -165,4 +172,5 @@ class CypherQueryGenerator(QueryGeneratorInterface):
 
     def parse_and_serialize(self, input,schema):
         parsed_result = self.parse_neo4j_results(input)
-        return parsed_result
+        return parsed_result["nodes"], parsed_result["edges"]
+
