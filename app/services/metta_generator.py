@@ -198,7 +198,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
 
         result.append(node_list)
         result.append(relationship_list)
-        return result
+        return {"nodes": node_list, "edges": relationship_list}
 
     def get_node_properties(self, results, schema):
         metta = ('''!(match &space (,''')
