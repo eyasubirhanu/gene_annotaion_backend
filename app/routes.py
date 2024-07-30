@@ -3,15 +3,21 @@ import logging
 import json
 from app import app, databases, schema_manager
 import configparser
+import os
 
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
 
-#load the config file
+# Load the config file
+config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.ini')
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(config_path)
 
-@app.route('/nodes', methods=['GET'])
+# Check if the file is read correctly
+if not config.read(config_path):
+    logging.error(f"Config file not found at: {config_path}")
+    raise FileNotFoundError(f"Config file found at: {config_path}")
+
 def get_nodes_endpoint():
     nodes = json.dumps(schema_manager.get_nodes(), indent=4)
     return Response(nodes, mimetype='application/json')
