@@ -2,9 +2,14 @@ from flask import Flask, request, jsonify, Response
 import logging
 import json
 from app import app, databases, schema_manager
-import itertools
+import configparser
+
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
+
+#load the config file
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 @app.route('/nodes', methods=['GET'])
 def get_nodes_endpoint():
@@ -26,7 +31,7 @@ def process_query():
     data = request.get_json()
     if not data or 'requests' not in data:
         return jsonify({"error": "Missing requests data"}), 400
-    database_type = 'metta'# data.get('database')
+    database_type = config['database']['type']# data.get('database')
     # if not database_type or database_type not in databases:
     #     return jsonify({"error": "Invalid or missing database parameter"}), 400
     try:
