@@ -12,7 +12,7 @@ from neo4j.graph import Node, Relationship
 
 load_dotenv()
 
-class CypherQueryGenerator(QueryGeneratorInterface):
+class Cypher_Query_Generator(QueryGeneratorInterface):
     def __init__(self, dataset_path: str):
         self.driver = GraphDatabase.driver(
             os.getenv('NEO4J_URI'),
