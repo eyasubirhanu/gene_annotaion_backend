@@ -31,15 +31,16 @@ _Supported OS:_ **Linux & Mac**
    ```
 
 3. **Choose Your Database Type**
-   Open app/routes.py and update database_type at line 28:
+   In the config directory mofidy config.ini to change between databses.
 
-   - To use Metta, set database_type to 'metta'.
-   - To use Neo4j, set database_type to 'cypher'.
+   - To use Metta, set the type to 'metta'.
+   - To use Neo4j, set the type to 'cypher'.
 
 Example
 
-   ```python
-   database_type = 'metta'  # Use 'cypher' for Neo4j
+   ```config   
+   [database]
+   type = cypher  # Change to 'metta' if needed
    ```
 
 4. **Build and Run the Docker Container**
