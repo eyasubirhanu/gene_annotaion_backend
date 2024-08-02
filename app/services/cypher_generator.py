@@ -160,11 +160,16 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
                         "data": {
                             "id": item.id,
                             "label": item.type,
-                            "source_node": source_id,
-                            "target_node": target_id,
-                            **item
+                            "source": source_id,
+                            "target": target_id,
                         }
                     }
+
+                    for key, value in item.items():
+                        if key == 'source':
+                            edge_data["data"]["source_data"] = value
+                        else:
+                            edge_data["data"][key] = value
                     edges.append(edge_data)
 
         return {"nodes": nodes, "edges": edges}
