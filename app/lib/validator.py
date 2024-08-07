@@ -1,11 +1,9 @@
 def validate_request(request, schema):
-    
-    nodes = request.get('nodes', [])
-    predicates = request.get('predicates', [])
+    if 'nodes' not in request:
+        raise Exception("node is missing")
 
-    if not nodes:
-        raise Exception("node is missing")  
-      
+    nodes = request['nodes']
+        
     # validate nodes
     if not isinstance(nodes, list):
         raise Exception("nodes should be a list")
@@ -13,6 +11,8 @@ def validate_request(request, schema):
     for node in nodes:
         if not isinstance(node, dict):
             raise Exception("Each node must be a dictionary")
+        if 'id' not in node:
+            raise Exception("id is required!")
         if 'type' not in node or node['type'] == "":
             raise Exception("type is required")
         if 'node_id' not in node or node['node_id'] == "":
@@ -32,7 +32,7 @@ def validate_request(request, schema):
     # validate predicates
     if 'predicates' in request:
         predicates = request['predicates']
-        
+            
         if not isinstance(predicates, list):
             raise Exception("Predicate should be a list")
         for predicate in predicates:
@@ -42,23 +42,17 @@ def validate_request(request, schema):
                 raise Exception("source is required")
             if 'target' not in predicate or predicate['target'] == "":
                 raise Exception("target is required")
-            
-            if predicate.get('source') not in node_map:
-                raise Exception(f"Predicate source node not found: {predicate['source']}")
 
-            if predicate.get('target') not in node_map:
-                raise Exception(f"Predicate target node not found: {predicate['target']}")
-
-            # Validate predicate types
-            predicate_type = predicate['type']
-            if predicate_type not in schema:
-                raise Exception(f"Predicate {predicate_type} not in schema")
+            if predicate['source'] not in node_map:
+                raise Exception(f"Source node {predicate['source']} does not exist in the nodes object")
+            if predicate['target'] not in node_map:
+                raise Exception(f"Target node {predicate['target']} does not exist in the nodes object")
                 
-            predicate_schema = schema[predicate['type']]   
+            predicate_schema = schema[predicate['type']]
+                
             source_type = node_map[predicate['source']]['type']
             target_type = node_map[predicate['target']]['type']
 
             if predicate_schema['source'] != source_type or predicate_schema['target'] != target_type:
                 raise Exception(f"{predicate['type']} have source as {predicate_schema['source']} and target as {predicate_schema['target']}")
         return node_map
-    
