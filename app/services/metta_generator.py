@@ -161,6 +161,8 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                         "id": f"{src_type} {src_value}",
                         "type": src_type,
                     }
+                if predicate == "synonyms":
+                    tgt = tgt.split(" ")
                 nodes[(src_type, src_value)][predicate] = tgt
             elif graph_attribute == "edge":
                 property_name, predicate, source, source_id, target, target_id = match[:6]
