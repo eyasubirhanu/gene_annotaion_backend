@@ -171,7 +171,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                     predicate = match[0]
                     src_type = match[1]
                     src_value = match[2]
-                    tgt = ' '.join(match[3:])
+                    tgt = list(match[3:])
                 else:
                     predicate, src_type, src_value, tgt = match
                 if (src_type, src_value) not in nodes:
@@ -193,8 +193,8 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                     }
                 if property_name == "source": 
                     relationships_dict[key]["source_data"] = value
-
-                relationships_dict[key][property_name] = value
+                else:
+                    relationships_dict[key][property_name] = value
         node_list = [{"data": node} for node in nodes.values()]
         relationship_list = [{"data": relationship} for relationship in relationships_dict.values()]
 
