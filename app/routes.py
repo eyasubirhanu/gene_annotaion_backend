@@ -4,6 +4,7 @@ import json
 from app import app, databases, schema_manager
 import configparser
 import os
+from app.lib import GraphProcessor
 
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
@@ -46,9 +47,11 @@ def process_query():
         query_code = db_instance.query_Generator(requests, schema_manager.schema)
         result = db_instance.run_query(query_code)
         parsed_result = db_instance.parse_and_serialize(result, schema_manager.schema)
-
-        formatted_response = json.dumps(parsed_result, indent=None) # removed indent=4 because am getting /n on the response
-        return Response(formatted_response, mimetype='application/json')
+        result_json = json.dumps(parsed_result)
+        graph_processor = GraphProcessor(result_json)
+        result = graph_processor.process()
+        #formatted_response = json.dumps(result, indent=None) # removed indent=4 because am getting /n on the response
+        return Response(result, mimetype='application/json')
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
