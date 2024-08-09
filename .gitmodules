@@ -1,0 +1,4 @@
+[submodule "annotation-graph"]
+	path = annotation-graph
+	url = https://github.com/eyasubirhanu/annotation-graph
+	branch = naod_ararsa
