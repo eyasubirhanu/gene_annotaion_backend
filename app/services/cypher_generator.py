@@ -74,7 +74,7 @@ class CypherQueryGenerator(QueryGeneratorInterface):
     def query_Generator(self, requests, schema):
         all_valid = True
         node_map = validate_request(requests, schema)
-        
+
         if node_map is None:
             all_valid = False
             raise Exception('error')
@@ -91,34 +91,41 @@ class CypherQueryGenerator(QueryGeneratorInterface):
             # Track nodes that are included in relationships
             used_nodes = set()
 
-            for i, predicate in enumerate(predicates):
-                predicate_type = predicate['type'].replace(" ", "_")
-                source_node = node_map[predicate['source']]
-                target_node = node_map[predicate['target']]
-
-                if i == 0:
-                    source_var = 's0'
-                    source_match = self.match_node(source_node, source_var)
-                    match_clauses.append(source_match)
-                else:
-                    source_var = f"t{i-1}"
-
-                target_var = f"t{i}"
-                target_match = self.match_node(target_node, target_var)
-
-                match_clauses.append(f"({source_var})-[r{i}:{predicate_type}]->{target_match}")
-                return_clauses.append(f"r{i}")
-
-                used_nodes.add(predicate['source'])
-                used_nodes.add(predicate['target'])
-            
-            for node_id, node in node_map.items():
-                if node_id not in used_nodes:
-                    var_name = f"n_{node_id}"
+            if not predicates:
+                # Case when there are no predicates
+                for node in nodes:
+                    var_name = f"n_{node['node_id']}"
                     match_clauses.append(self.match_node(node, var_name))
                     return_clauses.append(var_name)
+            else:
+                for i, predicate in enumerate(predicates):
+                    predicate_type = predicate['type'].replace(" ", "_")
+                    source_node = node_map[predicate['source']]
+                    target_node = node_map[predicate['target']]
 
-            return_clauses.extend([f"s0"] + [f"t{i}" for i in range(len(predicates))])
+                    if i == 0:
+                        source_var = 's0'
+                        source_match = self.match_node(source_node, source_var)
+                        match_clauses.append(source_match)
+                    else:
+                        source_var = f"t{i-1}"
+
+                    target_var = f"t{i}"
+                    target_match = self.match_node(target_node, target_var)
+
+                    match_clauses.append(f"({source_var})-[r{i}:{predicate_type}]->{target_match}")
+                    return_clauses.append(f"r{i}")
+
+                    used_nodes.add(predicate['source'])
+                    used_nodes.add(predicate['target'])
+                
+                for node_id, node in node_map.items():
+                    if node_id not in used_nodes:
+                        var_name = f"n_{node_id}"
+                        match_clauses.append(self.match_node(node, var_name))
+                        return_clauses.append(var_name)
+
+                return_clauses.extend([f"s0"] + [f"t{i}" for i in range(len(predicates))])
 
             match_clause = "MATCH " + ", ".join(match_clauses)
             return_clause = "RETURN " + ", ".join(return_clauses)
@@ -127,6 +134,7 @@ class CypherQueryGenerator(QueryGeneratorInterface):
         else:
             logging.debug("Processing stopped due to invalid request.")
         return cypher_queries
+
 
     
     def match_node(self, node, var_name):
