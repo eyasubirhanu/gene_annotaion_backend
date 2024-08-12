@@ -66,6 +66,14 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
             result_list = [record for record in results]
             return result_list
 
+    def build_query(self, match_clauses, return_clauses):
+        cypher_queries = []
+        match_clause = "MATCH " + ", ".join(match_clauses)
+        return_clause = "RETURN " + ", ".join(return_clauses)
+        cypher_query = f"{match_clause} {return_clause}"
+        cypher_queries.append(cypher_query)
+        return cypher_queries
+
     def query_Generator(self, requests, schema):
 
         node_dict = validate_request(requests, schema)
@@ -73,20 +81,38 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
         if (node_dict is None):
             #logging.debug("Processing stopped due to invalid request")
             raise Exception("Processing stopped do to invalid request")
-        #nodes = requests['nodes']
-        predicates = requests['predicates']
+        nodes = requests['nodes']
         
         cypher_queries = []
-        #all_valid = True
-        #node_dict = {node['node_id']: node for node in nodes}
-    
-        
+
         match_clauses = []
         return_clauses = []
 
+        node_without_predicate = None
+        predicates = None
+        if "predicates" not in requests or len(requests["predicates"]) == 0:
+            node_without_predicate = nodes
+        else:
+             predicates = requests['predicates']
+             node_with_predicate = set()
+             for predicate in predicates:
+                node_with_predicate.add(predicate["source"])
+                node_with_predicate.add(predicate["target"])
+             node_without_predicate = [node for node in nodes if node["node_id"] not in node_with_predicate]
+
+        if "predicates" not in requests or (node_without_predicate is not None and len(node_without_predicate) != 0):
+            for node in node_without_predicate:
+                node_match = self.match_node(node, node['node_id'])
+                match_clauses.append(node_match)
+                return_clauses.append(node['node_id'])
+        if predicates is None or len(requests['predicates']) == 0:
+            cypher_queries = self.build_query(match_clauses, return_clauses)
+            return cypher_queries
+
         # Track nodes that are included in relationships
         used_nodes = set()
-
+        
+        predicates = requests['predicates']
         for i, predicate in enumerate(predicates):
             predicate_type = predicate['type'].replace(" ", "_")
             source_node = node_dict[predicate['source']]
@@ -115,12 +141,8 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
                 return_clauses.append(var_name)
 
         return_clauses.extend([f"s0"] + [f"t{i}" for i in range(len(predicates))])
-
-        match_clause = "MATCH " + ", ".join(match_clauses)
-        return_clause = "RETURN " + ", ".join(return_clauses)
-        cypher_query = f"{match_clause} {return_clause}"
-        cypher_queries.append(cypher_query)
         
+        cypher_queries = self.build_query(match_clauses, return_clauses)
         #logging.debug("Processing stopped due to invalid request.")
         return cypher_queries
 
@@ -177,5 +199,5 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
 
     def parse_and_serialize(self, input,schema):
         parsed_result = self.parse_neo4j_results(input)
-        return parsed_result["nodes"], parsed_result["edges"]
+        return parsed_result
 
