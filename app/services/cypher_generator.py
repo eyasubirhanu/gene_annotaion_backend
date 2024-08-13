@@ -66,8 +66,10 @@ class CypherQueryGenerator(QueryGeneratorInterface):
         print(f"Finished loading {len(nodes_paths)} + {len(edges_paths)} datasets.")
 
     def run_query(self, query_code):
+        if isinstance(query_code, list):
+            query_code = query_code[0]
         with self.driver.session() as session:
-            results = session.run(query_code[0])
+            results = session.run(query_code)
             result_list = [record for record in results]
             return result_list
 
@@ -155,6 +157,7 @@ class CypherQueryGenerator(QueryGeneratorInterface):
             for item in record.values():
                 if isinstance(item, neo4j.graph.Node):
                     node_id = f"{list(item.labels)[0]} {item['id']}"
+                    print(node_id)
                     if node_id not in node_dict:
                         node_data = {
                             "id": self.generate_id(),
