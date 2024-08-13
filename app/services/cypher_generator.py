@@ -170,9 +170,12 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
                             "data": {
                                 "id": node_id,
                                 "type": list(item.labels)[0],
-                                **item
                             }
                         }
+
+                        for key, value in item.items():
+                            if key != "id":
+                                node_data["data"][key] = value
                         nodes.append(node_data)
                         node_dict[node_id] = node_data
                 elif isinstance(item, neo4j.graph.Relationship):
