@@ -156,15 +156,19 @@ class CypherQueryGenerator(QueryGeneratorInterface):
         for record in results:
             for item in record.values():
                 if isinstance(item, neo4j.graph.Node):
-                    node_id = f"{list(item.labels)[0]} {item['id']}"
+                    node_type = list(item.labels)[0]
+                    original_id = item['id']
+                    node_id = f"{node_type} {original_id}"
                     print(node_id)
                     if node_id not in node_dict:
                         node_data = {
                             "id": self.generate_id(),
                             "data": {
                                 "id": node_id,
-                                "type": list(item.labels)[0],
-                                **item
+                                "type": node_type,
+                                # added other properties from the node, excluding the original 'id'
+                                "neo4j_id": original_id,
+                                **{k: v for k, v in item.items() if k != 'id'}
                             }
                         }
                         nodes.append(node_data)
