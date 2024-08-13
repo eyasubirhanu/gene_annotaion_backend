@@ -21,8 +21,8 @@ class CypherQueryGenerator(QueryGeneratorInterface):
             os.getenv('NEO4J_URI'),
             auth=(os.getenv('NEO4J_USERNAME'), os.getenv('NEO4J_PASSWORD'))
         )
-        # self.dataset_path = dataset_path
-        # self.load_dataset(self.dataset_path)
+        self.dataset_path = dataset_path
+        self.load_dataset(self.dataset_path)
 
     def close(self):
         self.driver.close()
@@ -48,8 +48,21 @@ class CypherQueryGenerator(QueryGeneratorInterface):
             try:
                 with open(node_path, 'r') as file:
                     data = file.read()
-                    for line in data.splitlines():
-                        self.run_query(line)
+                    lines = data.splitlines()
+
+                    # Process each line with error handling and transaction
+                    with self.driver.session() as session:
+                        with session.begin_transaction() as tx:
+                            for line in lines:
+                                line = line.strip()
+                                if not line or line.startswith("//"):
+                                    continue
+                                try:
+                                    tx.run(line)
+                                except Exception as e:
+                                    logging.error(f"Failed to execute query: {line}, Error: {e}")
+
+                            tx.commit()
             except Exception as e:
                 print(f"Error loading dataset from '{node_path}': {e}")
 
@@ -59,8 +72,21 @@ class CypherQueryGenerator(QueryGeneratorInterface):
             try:
                 with open(edge_path, 'r') as file:
                     data = file.read()
-                    for line in data.splitlines():
-                        self.run_query(line)
+                    lines = data.splitlines()
+
+                    # Process each line with error handling and transaction
+                    with self.driver.session() as session:
+                        with session.begin_transaction() as tx:
+                            for line in lines:
+                                line = line.strip()
+                                if not line or line.startswith("//"):
+                                    continue
+                                try:
+                                    tx.run(line)
+                                except Exception as e:
+                                    logging.error(f"Failed to execute query: {line}, Error: {e}")
+
+                            tx.commit()
             except Exception as e:
                 print(f"Error loading dataset from '{edge_path}': {e}")
 
