@@ -5,6 +5,7 @@ import glob
 import json
 import uuid
 from dotenv import load_dotenv
+from collections import OrderedDict
 import neo4j
 from neo4j import GraphDatabase
 from neo4j.graph import Node, Relationship
@@ -163,14 +164,14 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                     if node_id not in node_dict:
                         node_data = {
                             "id": self.generate_id(),
-                            "data": {
-                                "id": node_id,
-                                "type": node_type,
-                                # added other properties from the node, excluding the original 'id'
-                                "neo4j_id": original_id,
-                                **{k: v for k, v in item.items() if k != 'id'}
-                            }
+                            "data": OrderedDict()
                         }
+                        
+                        node_data['data']['type'] = node_type
+                        for key, value in item.items():
+                            if key != 'id':  
+                                node_data['data'][key] = value
+
                         nodes.append(node_data)
                         node_dict[node_id] = node_data
                 elif isinstance(item, neo4j.graph.Relationship):
