@@ -2,12 +2,20 @@ from .query_generator_interface import QueryGeneratorInterface
 import json
 import neo4j, neo4j.graph
 from neo4j import GraphDatabase
-import os, glob
+import os, glob, logging
+logging.getLogger('neo4j').setLevel(logging.WARNING)
+logging.basicConfig(format='[%(filename)s:%(lineno)d] %(message)s',
+                    level=logging.DEBUG,
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("CypherQueryGenerator.log")
+    ])
 
 class Cypher_Query_Generator(QueryGeneratorInterface):
     def __init__(self, dataset_path: str, neo4j_uri: str, neo4j_username: str, neo4j_password: str, loads_dataset: bool = True):
         self.authenticate(neo4j_uri=neo4j_uri, neo4j_username=neo4j_username, neo4j_password=neo4j_password)
         self.dataset_path = dataset_path
+        self.logger = logging.getLogger('CypherQueryGenerator')
         if loads_dataset:
             self.load_dataset(self.dataset_path)
     def authenticate(self, neo4j_uri: str, neo4j_username: str, neo4j_password: str):
@@ -39,7 +47,16 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
                 print(f"Error loading dataset from '{path}': {e}")
         print(f"Finished loading {len(paths)} datasets.")
 
+    def run_query(self, query_code):
+        response = self.session.run(query_code)
+        return response
+    def close(self):
+        session = self.cypher.session(database="neo4j")
+        session.close()
+        self.cypher.close()
     def query_Generator(self, data):
+        self.logger.info("********** Cypher Query Generator ************\n\n")
+        
         # This part was handled by validator
         nodes = {node['node_id']: node for node in data['nodes']}
         
@@ -60,12 +77,16 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
         for predicate in predicates:
             predicate_type = predicate['type'].replace(" ", "_")
             source_id = predicate['source']
+            self.logger.debug(f"source_id {source_id}")
             target_id = predicate['target']
+            self.logger.debug(f"target_id {target_id}")
 
             predicate_generated_id =  source_id + "_" + predicate_type + "_" + target_id
+            self.logger.debug(f"predicate_generated_id {predicate_generated_id}")
 
             # get source node
             source_node = nodes[source_id]
+            self.logger.debug(f"source_node {source_node}")
             source_node_type = source_node["type"]
             source_node_properties_str = ", ".join([f"{k}: '{v}'" for k, v in source_node["properties"].items()])
             if source_node['id']:
@@ -75,6 +96,7 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
             
             #get target node
             target_node = nodes[target_id]
+            self.logger.debug(f"target_node {target_node}")
             target_node_type = target_node["type"]
             target_node_properties_str = ", ".join([f"{k}: '{v}'" for k, v in target_node["properties"].items()])
             if target_node['id']:
@@ -90,9 +112,14 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
         match_query = "MATCH " + ", ".join(match_statements)
         return_query = "RETURN " + ", ".join(return_statements)
         cypher_output = f"{match_query} {return_query}"
+        self.logger.debug(f"Cypher: {cypher_output}\n")
         return cypher_output
-
+    # def get_id_string(self, name):
+    #     get_id = "id("+name+") AS " + name + "__id"
+    #     return get_id
+    
     def parse_and_serialize(self, input_response) -> str:
+        self.logger.info("********** Cypher Query Response Parser ************\n\n")
         values = input_response.values()
         nodes = []
         edges = []
@@ -136,6 +163,7 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
                         "source": source_node_data['id'],
                         "target": target_node_data['id']
                     }
+                    self.logger.debug(str(p_d_short))
                     edges.append({
                         "data": predicate_data
                     })
