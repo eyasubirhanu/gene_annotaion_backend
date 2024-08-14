@@ -2,3 +2,6 @@ hyperon==0.1.7
 Flask == 3.0.3
 Werkzeug==3.0.2
 biocypher>=0.5.4
+langchain==0.2.11
+langchain-core==0.2.25
+langchain-community==0.2.10
