@@ -1,5 +1,6 @@
 from .query_generator_interface import QueryGeneratorInterface
 import json
+import neo4j, neo4j.graph
 
 class Cypher_Query_Generator(QueryGeneratorInterface):
     def query_Generator(self, data):
@@ -55,125 +56,84 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
         cypher_output = f"{match_query} {return_query}"
         return cypher_output
 
-    def parse_and_serialize(input_string: str) -> str:
-        cleaned_string = input_string.strip()
-        print("Response: ", cleaned_string)
-        list_returned = eval(cleaned_string)
-        included_ids = []
+    def parse_and_serialize(self, input_response) -> str:
+        values = input_response.values()
         nodes = []
         edges = []
-        for item in list_returned:
-            fields = list(item.values())
-            ids_map = {}
-            fields_map = {}
-            for key, value in item.items():
-                if key.endswith("__id"):
-                    id = value
-                    element = key.split("__")[0]
-                    ids_map[element] = id
-                    fields_map[id] = item
-            for key, value in item.items():
-                if not key.endswith("__id"):
-                    id = ids_map[key]
-                    fields_map[id] = value
-            print("IDS: ", ids_map)
-            print("Fields: ", fields_map)
-            for key, value in fields_map.items():
-                if isinstance(value, tuple):
-                    source, type, target = value
-                    for k, v in fields_map.items():
-                        if v == source:
-                            source_id = k
-                    for k, v in fields_map.items():
-                        if v == target:
-                            target_id = k
-                    if source_id not in included_ids:
-                        source_data = {
-                            "id": f"{source_type} {source_id}",
-                            "label": source_type,
-                            "type": source_type,
-                            **source_properties
-                        }
-                        nodes.append(
-                        {
-                            "data": source_data
-                        }
-                        )
-                else:
-                    print("Dict")
-
-            for field in fields:
-                if 'type' in field: # if predicate
-                    predicate_properties = field['properties'].copy()
+        included_ids = []
+        for record in values:
+            items_map = {}
+            for item in record:
+                items_map[item.id] = item
+            
+            for item in record:
+                if isinstance(item, neo4j.graph.Relationship):
+                    predicate_properties = item._properties.copy()
                     predicate_id = predicate_properties.pop('id', '')
-                    predicate_type = field['type']
-
-                    source_obj = fields_map[field['startNodeElementId']]
-                    source_properties = source_obj['properties'].copy()
-                    source_id = source_properties.pop('id', '')
-                    source_type = source_obj['labels'][0]
-                    if field['startNodeElementId'] not in included_ids:   
-                        source_data = {
-                            "id": f"{source_type} {source_id}",
-                            "label": source_type,
-                            "type": source_type,
-                            **source_properties
-                        }
-                        nodes.append(
-                        {
-                            "data": source_data
-                        }
-                        )
-                        included_ids.append(field['startNodeElementId'])
-                    target_obj = fields_map[field['endNodeElementId']]
-                    target_properties = target_obj['properties'].copy()
-                    target_id = target_properties.pop('id', '')
-                    target_type = target_obj['labels'][0]
-                    if field['endNodeElementId'] not in included_ids:
-                        target_data = {
-                            "id": f"{target_type} {target_id}",
-                            "label": target_type,
-                            "type": target_type,
-                            **target_properties
-                        }
-                        nodes.append({
-                            "data": target_data
-                        })
-                        included_ids.append(field['endNodeElementId'])
+                    predicate_type = item.type
+                    
+                    source_id = item._start_node.id
+                    source_node = items_map[source_id]
+                    source_node_data = self.get_node_data(source_node)
+                    if source_id not in included_ids:
+                        nodes.append({"data": source_node_data})
+                        included_ids.append(source_id)
+                    
+                    target_id = item._end_node.id
+                    target_node = items_map[target_id]
+                    target_node_data = self.get_node_data(target_node)
+                    
+                    if target_id not in included_ids:
+                        nodes.append({"data": target_node_data})
+                        included_ids.append(target_id)
+                    predicate_properties.pop("source", None)
                     predicate_data = {
                         "id": f"{predicate_type} {predicate_id}",
                         "label": predicate_type,
-                        "source": f"{source_type} {source_id}",
-                        "target": f"{target_type} {target_id}",
+                        "source_node": source_node_data['id'],
+                        "target_node": target_node_data['id'],
                         **predicate_properties
                     }
-                    
-                    
+                    p_d_short = {
+                        "id": f"{predicate_type} {predicate_id}",
+                        "label": predicate_type,
+                        "source": source_node_data['id'],
+                        "target": target_node_data['id']
+                    }
                     edges.append({
                         "data": predicate_data
                     })
-                    included_ids.append(field['elementId'])
-                else:
-                    # in case there are no predicates.. 
-                    node_properties = field['properties'].copy()
-                    node_id = node_properties.pop('id', '')
-                    node_type = field['labels'][0]
-                    if field['elementId'] not in included_ids:
-                        node_data = {
-                                "id": f"{node_type} {node_id}",
-                                "label": node_type,
-                                "type": node_type,
-                                **node_properties
-                            } 
+                    included_ids.append(predicate_id)
+                    
+                elif isinstance(item, neo4j.graph.Node):
+                    if item.id not in included_ids:
+                        node_data = self.get_node_data(item)
                         nodes.append(
-                            {
-                                "data": node_data
-                            }
-                            )
-                        included_ids.append(field['elementId'])
+                          {
+                              "data": node_data
+                          }
+                          )
+                        included_ids.append(item.id)
         parsed_data = {
             "nodes": nodes,
             "edges": edges
         }
-        print('Json', parsed_data)
-        return json.dumps(parsed_data)
+        return json.dumps(parsed_data) 
+
+           
+    def get_node_data(self, node:neo4j.graph.Node):
+        properties = node._properties.copy()
+        node_id = properties.pop('id', '')
+        label = list(node.labels)[0]
+        data = {
+                "id": f"{label} {node_id}",
+                "label": label,
+                "type": label,
+                **properties
+            }
+        # data_short = {
+        #         "id": f"{label} {node_id}",
+        #         "label": label,
+        #         "type": label
+        #     }
+        return data
