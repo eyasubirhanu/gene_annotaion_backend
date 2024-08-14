@@ -85,8 +85,8 @@ class SchemaManager:
                         relations.append(relation)
         return relations
 
-    def get_schema():
-        with open('schema_config.yaml', 'r') as file:
+    def get_schema(self):
+        with open(self.schema_path, 'r') as file:
             prime_service = yaml.safe_load(file)
 
         schema = {}
