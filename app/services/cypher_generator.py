@@ -1,203 +1,170 @@
-from .query_generator_interface import QueryGeneratorInterface
-import json
-import neo4j, neo4j.graph
+from typing import List
+import logging
+from dotenv import load_dotenv
+import neo4j
+from app.services.query_generator_interface import QueryGeneratorInterface
 from neo4j import GraphDatabase
-import os, glob, logging
-logging.getLogger('neo4j').setLevel(logging.WARNING)
-logging.basicConfig(format='[%(filename)s:%(lineno)d] %(message)s',
-                    level=logging.DEBUG,
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("CypherQueryGenerator.log")
-    ])
+import glob
+import os
+import json
+from neo4j.graph import Node, Relationship
 
-class Cypher_Query_Generator(QueryGeneratorInterface):
-    def __init__(self, dataset_path: str, neo4j_uri: str, neo4j_username: str, neo4j_password: str, loads_dataset: bool = True):
-        self.authenticate(neo4j_uri=neo4j_uri, neo4j_username=neo4j_username, neo4j_password=neo4j_password)
-        self.dataset_path = dataset_path
-        self.logger = logging.getLogger('CypherQueryGenerator')
-        if loads_dataset:
-            self.load_dataset(self.dataset_path)
-    def authenticate(self, neo4j_uri: str, neo4j_username: str, neo4j_password: str):
-        driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
-        driver.verify_connectivity()
-        self.driver = driver
-        self.session = driver.session()
+load_dotenv()
+
+class CypherQueryGenerator(QueryGeneratorInterface):
+    def __init__(self, dataset_path: str):
+        self.driver = GraphDatabase.driver(
+            os.getenv('NEO4J_URI'),
+            auth=(os.getenv('NEO4J_USERNAME'), os.getenv('NEO4J_PASSWORD'))
+        )
+        # self.dataset_path = dataset_path
+        # self.load_dataset(self.dataset_path)
+
+    def close(self):
+        self.driver.close()
+
     def load_dataset(self, path: str) -> None:
         if not os.path.exists(path):
             raise ValueError(f"Dataset path '{path}' does not exist.")
-        paths = glob.glob(os.path.join(path, "**/*.cypher"), recursive=True)
-        
-        if not paths:
-            raise ValueError(f"No cypher files found in dataset path '{path}'.")
-        node_paths = [p for p in paths if 'nodes.cypher' in p.lower()]
-        edge_paths = [p for p in paths if 'edges.cypher' in p.lower()]
-        all_paths = node_paths + edge_paths
-        for path in all_paths:
-            print(f"Start loading dataset from '{path}'...")
-            try:
-                with open(path, 'r') as file:
-                    lines = file.readlines()
 
-                for line in lines:
-                    query = line.strip()
-                    if query:
-                        self.run_query(query)
+        paths = glob.glob(os.path.join(path, "**/*.cypher"), recursive=True)
+        if not paths:
+            raise ValueError(f"No .cypher files found in dataset path '{self.dataset_path}'.")
+
+        # Separate nodes and edges
+        nodes_paths = [p for p in paths if p.endswith("nodes.cypher")]
+        edges_paths = [p for p in paths if p.endswith("edges.cypher")]
+
+        # Process nodes.cypher files first
+        for node_path in nodes_paths:
+            print(f"Start loading dataset from '{node_path}'...")
+            try:
+                with open(node_path, 'r') as file:
+                    data = file.read()
+                    for line in data.splitlines():
+                        self.run_query(line)
             except Exception as e:
-                print(f"Error loading dataset from '{path}': {e}")
-        print(f"Finished loading {len(paths)} datasets.")
+                print(f"Error loading dataset from '{node_path}': {e}")
+
+        # Process edges.cypher files next
+        for edge_path in edges_paths:
+            print(f"Start loading dataset from '{edge_path}'...")
+            try:
+                with open(edge_path, 'r') as file:
+                    data = file.read()
+                    for line in data.splitlines():
+                        self.run_query(line)
+            except Exception as e:
+                print(f"Error loading dataset from '{edge_path}': {e}")
+
+        print(f"Finished loading {len(nodes_paths)} + {len(edges_paths)} datasets.")
 
     def run_query(self, query_code):
-        response = self.session.run(query_code)
-        return response
-    def close(self):
-        session = self.cypher.session(database="neo4j")
-        session.close()
-        self.cypher.close()
-    def query_Generator(self, data):
-        self.logger.info("********** Cypher Query Generator ************\n\n")
-        
-        # This part was handled by validator
-        nodes = {node['node_id']: node for node in data['nodes']}
-        
-        
-        predicates = data['predicates']
-        match_statements = []
-        return_statements = []
-        for node in data['nodes']:
-            node_type = node["type"]
-            node_properties_str = ", ".join([f"{k}: '{v}'" for k, v in node["properties"].items()])
-            if node['id']:
-                match_statement = f"({node['node_id']}:{node_type} {{id: '{node['id']}'}})"
-            else:
-                match_statement = f"({node['node_id']}:{node_type} {{{node_properties_str}}})"
-            match_statements.append(match_statement)
-            return_statements.append(node['node_id'])
+        with self.driver.session() as session:
+            results = session.run(query_code[0])
+            result_list = [record for record in results]
+            return result_list
 
-        for predicate in predicates:
-            predicate_type = predicate['type'].replace(" ", "_")
-            source_id = predicate['source']
-            self.logger.debug(f"source_id {source_id}")
-            target_id = predicate['target']
-            self.logger.debug(f"target_id {target_id}")
+    def query_Generator(self, requests,node_map):
+        if node_map is None:
+            raise Exception('error')
+        
+        # nodes = requests['nodes']
+        predicates = requests['predicates']
 
-            predicate_generated_id =  source_id + "_" + predicate_type + "_" + target_id
-            self.logger.debug(f"predicate_generated_id {predicate_generated_id}")
+        cypher_queries = []
+        all_valid = True
+        # node_dict = {node['node_id']: node for node in nodes}
 
-            # get source node
-            source_node = nodes[source_id]
-            self.logger.debug(f"source_node {source_node}")
-            source_node_type = source_node["type"]
-            source_node_properties_str = ", ".join([f"{k}: '{v}'" for k, v in source_node["properties"].items()])
-            if source_node['id']:
-                source_match = f"({source_node['node_id']}:{source_node_type} {{id: '{source_node['id']}'}})"
-            else:
-                source_match = f"({source_node['node_id']}:{source_node_type} {{{source_node_properties_str}}})"
+        if all_valid:
+            match_clauses = []
+            return_clauses = []
+
+            # Track nodes that are included in relationships
+            used_nodes = set()
+
+            for i, predicate in enumerate(predicates):
+                predicate_type = predicate['type'].replace(" ", "_")
+                source_node = node_map[predicate['source']]
+                target_node = node_map[predicate['target']]
+
+                if i == 0:
+                    source_var = 's0'
+                    source_match = self.match_node(source_node, source_var)
+                    match_clauses.append(source_match)
+                else:
+                    source_var = f"t{i-1}"
+
+                target_var = f"t{i}"
+                target_match = self.match_node(target_node, target_var)
+
+                match_clauses.append(f"({source_var})-[r{i}:{predicate_type}]->{target_match}")
+                return_clauses.append(f"r{i}")
+
+                used_nodes.add(predicate['source'])
+                used_nodes.add(predicate['target'])
             
-            #get target node
-            target_node = nodes[target_id]
-            self.logger.debug(f"target_node {target_node}")
-            target_node_type = target_node["type"]
-            target_node_properties_str = ", ".join([f"{k}: '{v}'" for k, v in target_node["properties"].items()])
-            if target_node['id']:
-                target_match = f"({target_node['node_id']}:{target_node_type} {{id: '{target_node['id']}'}})"
-            else:
-                target_match = f"({target_node['node_id']}:{target_node_type} {{{target_node_properties_str}}})"
-            return_statements.append(source_node['node_id'])
-            return_statements.append(target_node['node_id'])
-            return_statements.append(predicate_generated_id)
-            match_statement = f" {source_match}-[{predicate_generated_id}:{predicate_type}]->{target_match}"
-            match_statements.append(match_statement)
-        return_statements = list(set(return_statements))
-        match_query = "MATCH " + ", ".join(match_statements)
-        return_query = "RETURN " + ", ".join(return_statements)
-        cypher_output = f"{match_query} {return_query}"
-        self.logger.debug(f"Cypher: {cypher_output}\n")
-        return cypher_output
-    # def get_id_string(self, name):
-    #     get_id = "id("+name+") AS " + name + "__id"
-    #     return get_id
+            for node_id, node in node_map.items():
+                if node_id not in used_nodes:
+                    var_name = f"n_{node_id}"
+                    match_clauses.append(self.match_node(node, var_name))
+                    return_clauses.append(var_name)
+
+            return_clauses.extend([f"s0"] + [f"t{i}" for i in range(len(predicates))])
+
+            match_clause = "MATCH " + ", ".join(match_clauses)
+            return_clause = "RETURN " + ", ".join(return_clauses)
+            cypher_query = f"{match_clause} {return_clause}"
+            cypher_queries.append(cypher_query)
+        else:
+            logging.debug("Processing stopped due to invalid request.")
+        return cypher_queries
+
     
-    def parse_and_serialize(self, input_response) -> str:
-        self.logger.info("********** Cypher Query Response Parser ************\n\n")
-        values = input_response.values()
+    def match_node(self, node, var_name):
+        if node['id']:
+            return f"({var_name}:{node['type']} {{id: '{node['id']}'}})"
+        elif node['properties']:
+            properties = ", ".join([f"{k}: '{v}'" for k, v in node['properties'].items()])
+            return f"({var_name}:{node['type']} {{{properties}}})"
+        else:
+            return f"({var_name}:{node['type']})"
+
+    def parse_neo4j_results(self, results):
         nodes = []
         edges = []
-        included_ids = []
-        for record in values:
-            items_map = {}
-            for item in record:
-                items_map[item.id] = item
-            
-            for item in record:
-                if isinstance(item, neo4j.graph.Relationship):
-                    predicate_properties = item._properties.copy()
-                    predicate_id = predicate_properties.pop('id', '')
-                    predicate_type = item.type
-                    
-                    source_id = item._start_node.id
-                    source_node = items_map[source_id]
-                    source_node_data = self.get_node_data(source_node)
-                    if source_id not in included_ids:
-                        nodes.append({"data": source_node_data})
-                        included_ids.append(source_id)
-                    
-                    target_id = item._end_node.id
-                    target_node = items_map[target_id]
-                    target_node_data = self.get_node_data(target_node)
-                    
-                    if target_id not in included_ids:
-                        nodes.append({"data": target_node_data})
-                        included_ids.append(target_id)
-                    predicate_properties.pop("source", None)
-                    predicate_data = {
-                        "id": f"{predicate_type} {predicate_id}",
-                        "label": predicate_type,
-                        "source_node": source_node_data['id'],
-                        "target_node": target_node_data['id'],
-                        **predicate_properties
-                    }
-                    p_d_short = {
-                        "id": f"{predicate_type} {predicate_id}",
-                        "label": predicate_type,
-                        "source": source_node_data['id'],
-                        "target": target_node_data['id']
-                    }
-                    self.logger.debug(str(p_d_short))
-                    edges.append({
-                        "data": predicate_data
-                    })
-                    included_ids.append(predicate_id)
-                    
-                elif isinstance(item, neo4j.graph.Node):
-                    if item.id not in included_ids:
-                        node_data = self.get_node_data(item)
-                        nodes.append(
-                          {
-                              "data": node_data
-                          }
-                          )
-                        included_ids.append(item.id)
-        parsed_data = {
-            "nodes": nodes,
-            "edges": edges
-        }
-        return json.dumps(parsed_data) 
+        node_dict = {}
 
-           
-    def get_node_data(self, node:neo4j.graph.Node):
-        properties = node._properties.copy()
-        node_id = properties.pop('id', '')
-        label = list(node.labels)[0]
-        data = {
-                "id": f"{label} {node_id}",
-                "label": label,
-                "type": label,
-                **properties
-            }
-        # data_short = {
-        #         "id": f"{label} {node_id}",
-        #         "label": label,
-        #         "type": label
-        #     }
-        return data
+        for record in results:
+            for item in record.values():
+                if isinstance(item, neo4j.graph.Node):
+                    node_id = f"{list(item.labels)[0]} {item['id']}"
+                    if node_id not in node_dict:
+                        node_data = {
+                            "data": {
+                                "id": node_id,
+                                "type": list(item.labels)[0],
+                                **item
+                            }
+                        }
+                        nodes.append(node_data)
+                        node_dict[node_id] = node_data
+                elif isinstance(item, neo4j.graph.Relationship):
+                    source_id = f"{list(item.start_node.labels)[0]} {item.start_node['id']}"
+                    target_id = f"{list(item.end_node.labels)[0]} {item.end_node['id']}"
+                    edge_data = {
+                        "data": {
+                            "id": item.id,
+                            "label": item.type,
+                            "source_node": source_id,
+                            "target_node": target_id,
+                            **item
+                        }
+                    }
+                    edges.append(edge_data)
+
+        return {"nodes": nodes, "edges": edges}
+
+    def parse_and_serialize(self, input,schema):
+        parsed_result = self.parse_neo4j_results(input)
+        return parsed_result["nodes"], parsed_result["edges"]
