@@ -60,15 +60,51 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
 
     def parse_and_serialize(input_string: str) -> str:
         cleaned_string = input_string.strip()
+        print("Response: ", cleaned_string)
         list_returned = eval(cleaned_string)
         included_ids = []
         nodes = []
         edges = []
         for item in list_returned:
             fields = list(item.values())
+            ids_map = {}
             fields_map = {}
-            for field in fields:
-                fields_map[field['elementId']] = field
+            for key, value in item.items():
+                if key.endswith("__id"):
+                    id = value
+                    element = key.split("__")[0]
+                    ids_map[element] = id
+                    fields_map[id] = item
+            for key, value in item.items():
+                if not key.endswith("__id"):
+                    id = ids_map[key]
+                    fields_map[id] = value
+            print("IDS: ", ids_map)
+            print("Fields: ", fields_map)
+            for key, value in fields_map.items():
+                if isinstance(value, tuple):
+                    source, type, target = value
+                    for k, v in fields_map.items():
+                        if v == source:
+                            source_id = k
+                    for k, v in fields_map.items():
+                        if v == target:
+                            target_id = k
+                    if source_id not in included_ids:
+                        source_data = {
+                            "id": f"{source_type} {source_id}",
+                            "label": source_type,
+                            "type": source_type,
+                            **source_properties
+                        }
+                        nodes.append(
+                        {
+                            "data": source_data
+                        }
+                        )
+                else:
+                    print("Dict")
+
             for field in fields:
                 if 'type' in field: # if predicate
                     predicate_properties = field['properties'].copy()
@@ -80,33 +116,33 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
                     source_id = source_properties.pop('id', '')
                     source_type = source_obj['labels'][0]
                     if field['startNodeElementId'] not in included_ids:   
-                      source_data = {
-                          "id": f"{source_type} {source_id}",
-                          "label": source_type,
-                          "type": source_type,
-                          **source_properties
-                      }
-                      nodes.append(
+                        source_data = {
+                            "id": f"{source_type} {source_id}",
+                            "label": source_type,
+                            "type": source_type,
+                            **source_properties
+                        }
+                        nodes.append(
                         {
                             "data": source_data
                         }
                         )
-                      included_ids.append(field['startNodeElementId'])
+                        included_ids.append(field['startNodeElementId'])
                     target_obj = fields_map[field['endNodeElementId']]
                     target_properties = target_obj['properties'].copy()
                     target_id = target_properties.pop('id', '')
                     target_type = target_obj['labels'][0]
                     if field['endNodeElementId'] not in included_ids:
-                      target_data = {
-                          "id": f"{target_type} {target_id}",
-                          "label": target_type,
-                          "type": target_type,
-                          **target_properties
-                      }
-                      nodes.append({
-                          "data": target_data
-                      })
-                      included_ids.append(field['endNodeElementId'])
+                        target_data = {
+                            "id": f"{target_type} {target_id}",
+                            "label": target_type,
+                            "type": target_type,
+                            **target_properties
+                        }
+                        nodes.append({
+                            "data": target_data
+                        })
+                        included_ids.append(field['endNodeElementId'])
                     predicate_data = {
                         "id": f"{predicate_type} {predicate_id}",
                         "label": predicate_type,
@@ -126,23 +162,27 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
                     node_id = node_properties.pop('id', '')
                     node_type = field['labels'][0]
                     if field['elementId'] not in included_ids:
-                      node_data = {
-                              "id": f"{node_type} {node_id}",
-                              "label": node_type,
-                              "type": node_type,
-                              **node_properties
-                          } 
-                      nodes.append(
-                          {
-                              "data": node_data
-                          }
-                          )
-                      included_ids.append(field['elementId'])
+                        node_data = {
+                                "id": f"{node_type} {node_id}",
+                                "label": node_type,
+                                "type": node_type,
+                                **node_properties
+                            } 
+                        nodes.append(
+                            {
+                                "data": node_data
+                            }
+                            )
+                        included_ids.append(field['elementId'])
         parsed_data = {
             "nodes": nodes,
             "edges": edges
         }
+        print('Json', parsed_data)
         return json.dumps(parsed_data)
+
+
+
 
 
 # input_data = {"nodes": [
@@ -182,77 +222,58 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
 # }
 # print(Cypher_Query_Generator.query_Generator(input_data))
 
-# input = """
+# data = """
 # [
-#   {
-#     "n": {
-#       "identity": 884,
-#       "labels": [
-#         "gene"
-#       ],
-#       "properties": {
-#         "gene_name": "PAK5",
-#         "gene_type": "protein_coding",
-#         "synonyms": [
-#           "p21CDKN1A-activated kinase 7",
-#           "PAK-7",
-#           "serine/threonine-protein kinase PAK7",
-#           "PAK7",
-#           "p21(CDKN1A)-activated kinase 7",
-#           "PAK-5",
-#           "p21-activated kinase 7",
-#           "p21 protein (Cdc42/Rac)-activated kinase 7",
-#           "protein kinase PAK5",
-#           "p21 (RAC1) activated kinase 5",
-#           "serine/threonine-protein kinase PAK 5",
-#           "p21-activated kinase 5",
-#           "serine/threonine-protein kinase PAK 7",
-#           "HGNC:15916",
-#           "PAK5",
-#           "p21 (RAC1) activated kinase 7"
-#         ],
-#         "start": "9537370",
-#         "end": "9839076",
-#         "source": "GENCODE",
-#         "id": "ensg00000101349",
-#         "chr": "chr20",
-#         "source_url": "https://www.gencodegenes.org/human/"
-#       },
-#       "elementId": "4:fb3bf8c9-deff-44c2-81ff-c36c561d2984:884"
-#     },
-#     "r": {
-#       "identity": 0,
-#       "start": 884,
-#       "end": 936,
-#       "type": "transcribed_to",
-#       "properties": {
-#         "source": "GENCODE",
-#         "source_url": "https://www.gencodegenes.org/human/"
-#       },
-#       "elementId": "5:fb3bf8c9-deff-44c2-81ff-c36c561d2984:0",
-#       "startNodeElementId": "4:fb3bf8c9-deff-44c2-81ff-c36c561d2984:884",
-#       "endNodeElementId": "4:fb3bf8c9-deff-44c2-81ff-c36c561d2984:936"
-#     },
-#     "b": {
-#       "identity": 936,
-#       "labels": [
-#         "transcript"
-#       ],
-#       "properties": {
-#         "gene_name": "PAK5",
-#         "transcript_id": "ENST00000353224.10",
-#         "transcript_name": "PAK5-201",
-#         "start": "9537370",
-#         "end": "9839076",
-#         "source": "GENCODE",
-#         "id": "enst00000353224",
-#         "transcript_type": "protein_coding",
-#         "chr": "chr20",
-#         "source_url": "https://www.gencodegenes.org/human/"
-#       },
-#       "elementId": "4:fb3bf8c9-deff-44c2-81ff-c36c561d2984:936"
+#     {
+#         "n3": {
+#             "accessions": ["B3KUQ0", "Q9H6Y9"],
+#             "id": "q9nu02",
+#             "source": "Uniprot",
+#             "protein_name": "ANKE1",
+#             "synonyms": ["AGR:HGNC:15803", "..."],
+#             "source_url": "https://www.uniprot.org/"
+#         },
+#         "n2_translates_to_n3__id": 380,
+#         "n2_translates_to_n3": (
+#             {
+#                 "gene_name": "ANKEF1",
+#                 "transcript_id": "ENST00000378380.4",
+#                 "transcript_name": "ANKEF1-201",
+#                 "start": "10035049",
+#                 "end": "10058303",
+#                 "id": "enst00000378380",
+#                 "source": "GENCODE",
+#                 "transcript_type": "protein_coding",
+#                 "chr": "chr20",
+#                 "source_url": "https://www.gencodegenes.org/human/"
+#             },
+#             "translates_to",
+#             {
+#                 "accessions": ["B3KUQ0", "Q9H6Y9"],
+#                 "id": "q9nu02",
+#                 "source": "Uniprot",
+#                 "protein_name": "ANKE1",
+#                 "synonyms": ["AGR:HGNC:15803", "..."],
+#                 "source_url": "https://www.uniprot.org/"
+#             }
+#         ),
+#         "n2__id": 61,
+#         "n2": {
+#             "gene_name": "ANKEF1",
+#             "transcript_id": "ENST00000378380.4",
+#             "transcript_name": "ANKEF1-201",
+#             "start": "10035049",
+#             "end": "10058303",
+#             "id": "enst00000378380",
+#             "source": "GENCODE",
+#             "transcript_type": "protein_coding",
+#             "chr": "chr20",
+#             "source_url": "https://www.gencodegenes.org/human/"
+#         },
+#         "n3__id": 242
 #     }
-#   }]
+# ]
+
 # """
 
-# print(Cypher_Query_Generator.parse_and_serialize(input))
+# print(Cypher_Query_Generator.parse_and_serialize(data))
