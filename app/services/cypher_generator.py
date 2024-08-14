@@ -1,8 +1,33 @@
 from .query_generator_interface import QueryGeneratorInterface
 import json
 import neo4j, neo4j.graph
+import os, glob
 
 class Cypher_Query_Generator(QueryGeneratorInterface):
+    def load_dataset(self, path: str) -> None:
+        if not os.path.exists(path):
+            raise ValueError(f"Dataset path '{path}' does not exist.")
+        paths = glob.glob(os.path.join(path, "**/*.cypher"), recursive=True)
+        
+        if not paths:
+            raise ValueError(f"No cypher files found in dataset path '{path}'.")
+        node_paths = [p for p in paths if 'nodes.cypher' in p.lower()]
+        edge_paths = [p for p in paths if 'edges.cypher' in p.lower()]
+        all_paths = node_paths + edge_paths
+        for path in all_paths:
+            print(f"Start loading dataset from '{path}'...")
+            try:
+                with open(path, 'r') as file:
+                    lines = file.readlines()
+
+                for line in lines:
+                    query = line.strip()
+                    if query:
+                        self.run_query(query)
+            except Exception as e:
+                print(f"Error loading dataset from '{path}': {e}")
+        print(f"Finished loading {len(paths)} datasets.")
+
     def query_Generator(self, data):
         # This part was handled by validator
         nodes = {node['node_id']: node for node in data['nodes']}
