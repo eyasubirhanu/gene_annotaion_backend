@@ -5,6 +5,11 @@ from neo4j import GraphDatabase
 import os, glob
 
 class Cypher_Query_Generator(QueryGeneratorInterface):
+    def __init__(self, dataset_path: str, neo4j_uri: str, neo4j_username: str, neo4j_password: str, loads_dataset: bool = True):
+        self.authenticate(neo4j_uri=neo4j_uri, neo4j_username=neo4j_username, neo4j_password=neo4j_password)
+        self.dataset_path = dataset_path
+        if loads_dataset:
+            self.load_dataset(self.dataset_path)
     def authenticate(self, neo4j_uri: str, neo4j_username: str, neo4j_password: str):
         driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
         driver.verify_connectivity()
