@@ -1,9 +1,15 @@
 from .query_generator_interface import QueryGeneratorInterface
 import json
 import neo4j, neo4j.graph
+from neo4j import GraphDatabase
 import os, glob
 
 class Cypher_Query_Generator(QueryGeneratorInterface):
+    def authenticate(self, neo4j_uri: str, neo4j_username: str, neo4j_password: str):
+        driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
+        driver.verify_connectivity()
+        self.driver = driver
+        self.session = driver.session()
     def load_dataset(self, path: str) -> None:
         if not os.path.exists(path):
             raise ValueError(f"Dataset path '{path}' does not exist.")
