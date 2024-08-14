@@ -7,12 +7,25 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
         predicates = data['predicates']
         match_statements = []
         return_statements = []
+        for node in data['nodes']:
+            node_type = node["type"]
+            node_properties_str = ", ".join([f"{k}: '{v}'" for k, v in node["properties"].items()])
+            if node['id']:
+                match_statement = f"({node['node_id']}:{node_type} {{id: '{node['id']}'}})"
+            else:
+                match_statement = f"({node['node_id']}:{node_type} {{{node_properties_str}}})"
+            match_statements.append(match_statement)
+            return_statements.append('apoc.convert.toJson('+node['node_id']+') AS '+ node['node_id'])
+
         for predicate in predicates:
             predicate_type = predicate['type'].replace(" ", "_")
             source_id = predicate['source']
             print("source_id", source_id)
             target_id = predicate['target']
             print("target_id", target_id)
+
+            predicate_generated_id =  source_id + "_" + predicate_type + "_" + target_id
+            print("predicate_generated_id", predicate_generated_id)
 
             # get source node
             source_node = nodes[source_id]
@@ -22,7 +35,7 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
             if source_node['id']:
                 source_match = f"({source_node['node_id']}:{source_node_type} {{id: '{source_node['id']}'}})"
             else:
-                source_match = f"({source_node['node_id']}:{source_node_type} {source_node_properties_str})"
+                source_match = f"({source_node['node_id']}:{source_node_type} {{{source_node_properties_str}}})"
             
             #get target node
             target_node = nodes[target_id]
@@ -32,15 +45,17 @@ class Cypher_Query_Generator(QueryGeneratorInterface):
             if target_node['id']:
                 target_match = f"({target_node['node_id']}:{target_node_type} {{id: '{target_node['id']}'}})"
             else:
-                target_match = f"({target_node['node_id']}:{target_node_type} {target_node_properties_str})"
-            return_statements.append(source_node['node_id'])
-            return_statements.append(target_node['node_id'])
-            return_statements = list(set(return_statements))
-            match_statement = f" {source_match}-[:{predicate_type}]-{target_match}"
+                target_match = f"({target_node['node_id']}:{target_node_type} {{{target_node_properties_str}}})"
+            return_statements.append('apoc.convert.toJson('+source_node['node_id']+') AS '+ source_node['node_id'])
+            return_statements.append('apoc.convert.toJson('+target_node['node_id']+') AS '+ target_node['node_id'])
+            return_statements.append('apoc.convert.toJson('+predicate_generated_id+') AS '+ predicate_generated_id)
+            match_statement = f" {source_match}-[{predicate_generated_id}:{predicate_type}]->{target_match}"
             match_statements.append(match_statement)
+        return_statements = list(set(return_statements))
         match_query = "MATCH " + ", ".join(match_statements)
         return_query = "RETURN " + ", ".join(return_statements)
         cypher_output = f"{match_query} {return_query}"
+        print('Cypher: ' , cypher_output)
         return cypher_output
 
     def parse_and_serialize(input_string: str) -> str:
