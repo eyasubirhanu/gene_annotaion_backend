@@ -5,7 +5,10 @@ from app import app, databases, schema_manager
 import configparser
 import os
 from app.lib import GraphProcessor
+from flask_cors import CORS
 
+#enable cors
+CORS(app)
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
 
