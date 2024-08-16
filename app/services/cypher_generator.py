@@ -192,10 +192,10 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                             "id": self.generate_id(),
                             "data": OrderedDict()
                         }
-                        
+                        node_data['data']['id'] = node_id
                         node_data['data']['type'] = node_type
                         for key, value in item.items():
-                            if key != 'id':  
+                            if key != 'id' and key!= "synonyms":  
                                 node_data['data'][key] = value
 
                         nodes.append(node_data)
