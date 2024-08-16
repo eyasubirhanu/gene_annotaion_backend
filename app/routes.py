@@ -3,6 +3,10 @@ import logging
 import json
 from app import app, databases, schema_manager
 import itertools
+from flask_cors import CORS
+
+CORS(app)
+
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -26,7 +30,7 @@ def process_query():
     data = request.get_json()
     if not data or 'requests' not in data:
         return jsonify({"error": "Missing requests data"}), 400
-    database_type = 'cypher'# data.get('database')
+    database_type = 'metta'# data.get('database')
     # if not database_type or database_type not in databases:
     #     return jsonify({"error": "Invalid or missing database parameter"}), 400
     try:
