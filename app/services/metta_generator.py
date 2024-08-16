@@ -156,14 +156,20 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                     tgt = ' '.join(match[3:])
                 else:
                     predicate, src_type, src_value, tgt = match
+                
+                # Skip adding the synonyms property to the node
+                if predicate == "synonyms":
+                    continue
+
                 if (src_type, src_value) not in nodes:
                     nodes[(src_type, src_value)] = {
                         "id": f"{src_type} {src_value}",
                         "type": src_type,
                     }
-                if predicate == "synonyms":
+                if predicate == "accessions":
                     tgt = tgt.split(" ")
                 nodes[(src_type, src_value)][predicate] = tgt
+
             elif graph_attribute == "edge":
                 property_name, predicate, source, source_id, target, target_id = match[:6]
                 value = ' '.join(match[6:])
