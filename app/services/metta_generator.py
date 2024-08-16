@@ -145,7 +145,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                 "source": f"{src_type} {src_id}",
                 "target": f"{tgt_type} {tgt_id}"
                 })
-        
+ 
         query = self.get_node_properties(result, schema)
         result = self.run_query(query)
         result = self.parse_and_serialize_properties(result[0])
@@ -180,6 +180,8 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                         "type": src_type,
                     }
                 nodes[(src_type, src_value)][predicate] = tgt
+                if 'synonyms' in nodes[(src_type, src_value)]:
+                    del nodes[(src_type, src_value)]['synonyms']
             elif graph_attribute == "edge":
                 property_name, predicate, source, source_id, target, target_id = match[:6]
                 value = ' '.join(match[6:])
