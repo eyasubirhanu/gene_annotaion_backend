@@ -4,6 +4,7 @@ import json
 from app import app, databases, schema_manager
 import itertools
 from app.lib import validate_request 
+from app.services.annotation_graph import process_graph
 # Setup basic logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -48,8 +49,13 @@ def process_query():
             "nodes": parsed_result[0],
             "edges": parsed_result[1]
         }
+        print(response_data)
+        # formatted_response = json.dumps(response_data, indent=4)
+
+        annotation_graph_data = json.dumps(response_data)
+        annotation_graph = process_graph(annotation_graph_data)
+        formatted_response = json.dumps(annotation_graph, indent=4)
         
-        formatted_response = json.dumps(response_data, indent=4)
         return Response(formatted_response, mimetype='application/json')
     except Exception as e:
         return jsonify({"error": str(e)}), 500
