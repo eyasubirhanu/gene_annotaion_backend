@@ -15,13 +15,17 @@ def process_graph(json_string: str):
 
         file.write(json_string)
     # Create a GraphProcessor instance
-    processor = ann_graph.GraphProcessor(input_file_path)
+    try:
+        processor = ann_graph.GraphProcessor(input_file_path)
 
-    # Write JSON to the temporary file
-    processor.process()
+        # Write JSON to the temporary file
+        processor.process()
 
-    # Read the JSON content from the temporary file
-    with open(output_file_path, 'r') as file:
-        json_data = file.read()
+        # Read the JSON content from the temporary file
+        with open(output_file_path, 'r') as file:
+            json_data = file.read()
 
-    return json_data
+        return json_data
+    except Exception as e:
+        print(f"Couldn't finish building graph {e}")
+        return "{}"

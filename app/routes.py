@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, Response
 import logging
 import json
-from app import app, databases, schema_manager
+from app import app, databases, schema_manager, chatbots
 import itertools
 from app.lib import validate_request 
 from app.services.annotation_graph import process_graph
@@ -49,13 +49,35 @@ def process_query():
             "nodes": parsed_result[0],
             "edges": parsed_result[1]
         }
-        print(response_data)
         # formatted_response = json.dumps(response_data, indent=4)
-
+        
         annotation_graph_data = json.dumps(response_data)
         annotation_graph = process_graph(annotation_graph_data)
         formatted_response = json.dumps(annotation_graph, indent=4)
         
+        return Response(formatted_response, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    if not data or 'prompt' not in data:
+        return jsonify({"error": "Missing prompt"}), 400
+
+    try:
+        prompt = data['prompt'] 
+        chatbot_type = 'groq'
+        chatbot_instance = chatbots[chatbot_type]
+        print(chatbot_type)
+        output = chatbot_instance.run_user_input(prompt)
+        response = {
+            "chat": output[0],
+            "graph": output[1]
+        }
+        print(output)
+        formatted_response = json.dumps(output, indent=4)
+        print(formatted_response)
         return Response(formatted_response, mimetype='application/json')
     except Exception as e:
         return jsonify({"error": str(e)}), 500

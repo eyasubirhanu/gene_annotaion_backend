@@ -138,6 +138,8 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                 if isinstance(item, neo4j.graph.Node):
                     node_id = f"{list(item.labels)[0]} {item['id']}"
                     if node_id not in node_dict:
+                        item_dict = dict(item)  
+                        item_dict.pop("id", None)
                         node_data = {
                             "data": {
                                 "id": node_id,
@@ -146,7 +148,7 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                                 "definition": "",
                                 "name": "",
                                 "group": [""],
-                                **item
+                                **item_dict
                             },
                             "group":"nodes"
                         }
