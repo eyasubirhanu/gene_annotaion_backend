@@ -142,22 +142,37 @@ class CypherQueryGenerator(QueryGeneratorInterface):
                             "data": {
                                 "id": node_id,
                                 "type": list(item.labels)[0],
+                                "location": "",
+                                "definition": "",
+                                "name": "",
+                                "group": [""],
                                 **item
-                            }
+                            },
+                            "group":"nodes"
                         }
                         nodes.append(node_data)
                         node_dict[node_id] = node_data
                 elif isinstance(item, neo4j.graph.Relationship):
                     source_id = f"{list(item.start_node.labels)[0]} {item.start_node['id']}"
                     target_id = f"{list(item.end_node.labels)[0]} {item.end_node['id']}"
+                    item_dict = dict(item)  
+    
+                    # Pop 'source' and 'target' if they exist
+                    item_dict.pop("source", None)
+                    item_dict.pop("target", None)
                     edge_data = {
                         "data": {
                             "id": item.id,
                             "label": item.type,
-                            "source_node": source_id,
-                            "target_node": target_id,
-                            **item
-                        }
+                            "source": source_id,
+                            "target": target_id,
+                            "pubmedId": "",
+                            "subgroup": "",
+                            "name": "",
+                            "group": [""],
+                            **item_dict
+                        },
+                        "group":"edges"
                     }
                     edges.append(edge_data)
 

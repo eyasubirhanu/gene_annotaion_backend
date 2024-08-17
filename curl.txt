@@ -90,3 +90,5 @@ curl --location 'http://localhost:5000/query' \
   }
 }'
 
+powershell curl
+Invoke-RestMethod -Uri "http://localhost:5000/query" -Method Post -Headers @{"Content-Type" = "application/json"} -Body '{"requests":{"nodes":[{"node_id":"n2","id":"enst00000378380","type":"transcript","properties":{}},{"node_id":"n3","id":"q9nu02","type":"protein","properties":{}}],"predicates":[{"type":"translates to","source":"n2","target":"n3"}]}}'
