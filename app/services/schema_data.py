@@ -16,7 +16,7 @@ class SchemaManager:
         parent_nodes = set()
         for _, attributes in self.schema.items():
             if 'represented_as' in attributes and attributes['represented_as'] == 'node' \
-                    and 'is_a' in attributes and attributes['is_a'] not in parent_nodes:
+                    and 'is_a' in attributes and attributes['is_a'] not in parent_nodes: # attributes['is_a'] not in parent_nodes not necessarly since it is a set
                 parent_nodes.add(attributes['is_a'])
         return list(parent_nodes)
 
@@ -24,7 +24,7 @@ class SchemaManager:
         parent_edges = set()
         for _, attributes in self.schema.items():
             if 'represented_as' in attributes and attributes['represented_as'] == 'edge' \
-                    and 'is_a' in attributes and attributes['is_a'] not in parent_edges:
+                    and 'is_a' in attributes and attributes['is_a'] not in parent_edges: # attributes['is_a'] not in parent_edges not necessarly since it is a set
                 parent_edges.add(attributes['is_a'])
         return list(parent_edges)
     
