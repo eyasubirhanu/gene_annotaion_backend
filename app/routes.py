@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, send_from_directory
 import logging
 import json
 from app import app, databases, schema_manager
@@ -6,6 +6,7 @@ import configparser
 import os
 from app.lib import GraphProcessor
 from flask_cors import CORS
+from app.lib import limit_node
 
 #enable cors
 CORS(app)
@@ -25,6 +26,11 @@ if not config.read(config_path):
 def get_nodes_endpoint():
     nodes = json.dumps(schema_manager.get_nodes(), indent=4)
     return Response(nodes, mimetype='application/json')
+
+@app.route('/swagger.json')
+def swagger():
+    with open('./swagger.json', 'r') as f:
+        return jsonify(json.load(f))
 
 @app.route('/edges', methods=['GET'])
 def get_edges_endpoint():
@@ -50,7 +56,8 @@ def process_query():
         query_code = db_instance.query_Generator(requests, schema_manager.schema)
         result = db_instance.run_query(query_code)
         parsed_result = db_instance.parse_and_serialize(result, schema_manager.schema)
-        result_json = json.dumps(parsed_result)
+        response = limit_node(parsed_result, 30)
+        result_json = json.dumps(response)
         graph_processor = GraphProcessor(result_json)
         result = graph_processor.process()
         #formatted_response = json.dumps(result, indent=None) # removed indent=4 because am getting /n on the response
