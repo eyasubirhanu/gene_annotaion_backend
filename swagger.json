@@ -1,0 +1,205 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Annotation Service API",
+    "description": "API documentation for querying specific nodes, relationships, and retrieving node and edge data.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/query": {
+      "post": {
+        "summary": "Query nodes and relationships",
+        "description": "This endpoint allows users to query specific nodes and their relationships (edges) based on provided criteria.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "requests": {
+                    "type": "object",
+                    "properties": {
+                      "nodes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "node_id": {
+                              "type": "string",
+                              "description": "Unique identifier for the node within the query context"
+                            },
+                            "id": {
+                              "type": "string",
+                              "description": "The key id must be present, but its value can be an empty string if you do not have a specific identifier."
+                            },
+                            "type": {
+                              "type": "string",
+                              "description": "The type of the node (e.g., gene, transcript)"
+                            },
+                            "properties": {
+                              "type": "object",
+                              "description": "A dictionary of properties to match for the node. The specific properties required depend on the node type."
+                            }
+                          },
+                          "required": ["node_id", "id", "type", "properties"]
+                        }
+                      },
+                      "predicates": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "description": "The type of relationship (e.g., transcribed to, coexpressed_with)."
+                            },
+                            "source": {
+                              "type": "string",
+                              "description": "The node_id of the source node in the relationship."
+                            },
+                            "target": {
+                              "type": "string",
+                              "description": "The node_id of the target node in the relationship."
+                            }
+                          },
+                          "required": ["type", "source", "target"]
+                        }
+                      }
+                    },
+                    "required": ["nodes"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "The result of the query containing the matched nodes and relationships."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nodes": {
+      "get": {
+        "summary": "GET All Nodes",
+        "description": "This endpoint retrieves a list of all nodes in the annotation service database. Each node represents a biological entity, such as a gene, protein, or other relevant data point.",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "A list of nodes",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "child_nodes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string" },
+                        "is_a": { "type": "string" },
+                        "label": { "type": "string" },
+                        "properties": {
+                          "type": "object",
+                          "additionalProperties": { "type": "string" }
+                        }
+                      }
+                    }
+                  },
+                  "parent_node": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/edges": {
+      "get": {
+        "summary": "GET All Edges",
+        "description": "This endpoint retrieves all edges between nodes in the annotation service. Each edge represents a relationship or interaction between two biological entities, such as a gene being transcribed to a transcript.",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "A list of edges",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "child_edges": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string" },
+                        "label": { "type": "string" },
+                        "is_a": { "type": "string" },
+                        "source": { "type": "string" },
+                        "target": { "type": "string" },
+                        "properties": {
+                          "type": "object",
+                          "additionalProperties": { "type": "string" }
+                        }
+                      }
+                    }
+                  },
+                  "parent_edge": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/relations/{node_label}": {
+      "get": {
+        "summary": "GET Relationships for a Node Type",
+        "description": "This endpoint retrieves all relationships associated with a specific node type in the annotation service database. It returns a list of relationships that the specified node has with other nodes, detailing the type of relationship, the source and target nodes, and their labels.",
+        "parameters": [
+          {
+            "name": "node_label",
+            "in": "path",
+            "required": true,
+            "description": "The label or type of the node (e.g., gene, transcript) for which relationships are being queried.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of relationships for the specified node type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": { "type": "string" },
+                      "label": { "type": "string" },
+                      "source": { "type": "string" },
+                      "target": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
