@@ -7,3 +7,4 @@ myenv
 biocypher-log
 __pycache__
 cypher/
+*.sqlite3

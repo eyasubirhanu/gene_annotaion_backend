@@ -1,0 +1,6 @@
+{
+  "python.analysis.extraPaths": [
+    "./app/lib/auth_",
+    "./app/lib"
+  ]
+}
