@@ -23,6 +23,7 @@ if not config.read(config_path):
     logging.error(f"Config file not found at: {config_path}")
     raise FileNotFoundError(f"Config file found at: {config_path}")
 
+@app.route('/nodes')
 def get_nodes_endpoint():
     nodes = json.dumps(schema_manager.get_nodes(), indent=4)
     return Response(nodes, mimetype='application/json')
