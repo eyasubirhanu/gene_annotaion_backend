@@ -55,4 +55,5 @@ def validate_request(request, schema):
 
             if predicate_schema['source'] != source_type or predicate_schema['target'] != target_type:
                 raise Exception(f"{predicate['type']} have source as {predicate_schema['source']} and target as {predicate_schema['target']}")
+
         return node_map

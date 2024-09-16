@@ -44,7 +44,7 @@ def test_node_without_node_id():
         validate_request(request, schema_manager.schema)
 
 
-def test_node_without_node_id():
+def test_node_without_id():
     #assert each node in nodes value has an id
     request = {'nodes': [
         { "node_id": "n1", # node with out id
@@ -259,4 +259,5 @@ def test_predicte_target_map():
         validate_request(request, schema_manager.schema)
 
 # add test for last exception
-# def test_predicate_schema_type():
+def test_predicate_schema_type():
+    pass

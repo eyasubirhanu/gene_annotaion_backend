@@ -1,7 +1,12 @@
+Data/
 biocypher-log/
 **/__pycache__/
 cypher_data/
 metta_data/
-myenvw/
 myenv/
 .gitignore
+.env
+schema.json
+*.txt
+tags
+output

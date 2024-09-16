@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 databases = {
     "metta": MeTTa_Query_Generator("./Data"),
-    # "cypher": CypherQueryGenerator("./cypher_data")
+    "cypher": CypherQueryGenerator("./cypher_data")
     
     # Add other database instances here
 }

@@ -42,3 +42,28 @@ def test_node_route(client):
     for schema in schemas:
         # assert that each item has child and parent nodes
         assert ('child_nodes', 'parent_node') == tuple(schema.keys())
+
+# test for valid /query route
+def test_process_query(client, query_json):
+    # make a call to the /query endpoint
+    response = client.post('/query', data=json.dumps(query_json), content_type='application/json')
+    assert response._status == '200 OK'
+    
+    # test output dict keys
+    assert tuple(response.json.keys()) == ('nodes', "edges")
+
+    # test the each response value is a list
+    for value in response.json.values():
+        assert isinstance(value, list) == True
+
+# test for empty json /query route
+def test_query_without_data(client):
+    # make a call to the /query endpoint with out json data
+    response = client.post('/query')
+    assert response._status == '415 UNSUPPORTED MEDIA TYPE'
+
+def test_query_with_empty_data(client):
+    # make a call to the /query endpoint with empty json data
+    response = client.post('/query', data=json.dumps({'request': 'test'}), content_type='application/json')
+    assert response._status == '400 BAD REQUEST'
+

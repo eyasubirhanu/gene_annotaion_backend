@@ -1,1 +1,0 @@
-source = [gene, transcript, pathway, go, enhancer, super_enhancer, promoter, regulatory_region, snp, protien, non_coding_rna]

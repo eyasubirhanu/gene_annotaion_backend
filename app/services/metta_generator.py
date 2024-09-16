@@ -48,7 +48,6 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
 
     def query_Generator(self, data,node_map):
         nodes = data['nodes']
-
         metta_output = '''!(match &space (,'''
         output = ''' (,'''
  
@@ -121,7 +120,6 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
 
     def parse_and_serialize(self, input, schema):
         result = []
-
         tuples = self.metta_seralizer(input[0])
         for tuple in tuples:
             if len(tuple) == 2:
@@ -197,7 +195,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
 
     def get_node_properties(self, results, schema):
         metta = ('''!(match &space (,''')
-        output = (''' (,''') 
+        output = (''' (,''')
         nodes = set()
         for result in results:
             source = result['source']

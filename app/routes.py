@@ -54,6 +54,7 @@ def process_query():
         
         # Validate the request data before processing
         node_map = validate_request(requests, schema_manager.schema)
+        print(node_map)
         if node_map is None:
             return jsonify({"error": "Invalid node_map returned by validate_request"}), 400
         
