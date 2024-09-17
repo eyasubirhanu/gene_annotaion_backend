@@ -241,7 +241,6 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
 
     def metta_seralizer(self, metta_result):
         result = []
-
         for node in metta_result:
             node = node.get_children()
             for metta_symbol in node:
@@ -250,7 +249,6 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                 if isinstance(metta_symbol, ExpressionAtom):
                     res = self.recurssive_seralize(metta_symbol.get_children(), [])
                     result.append(tuple(res))
+
         return result
-
-
 

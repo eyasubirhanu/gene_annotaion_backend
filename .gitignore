@@ -10,3 +10,4 @@ schema.json
 *.txt
 tags
 output
+.pytest_cahce

@@ -1,4 +1,10 @@
 import pytest
+from app.services.metta_generator import MeTTa_Query_Generator
+
+@pytest.fixture()
+def runner():
+  runner = MeTTa_Query_Generator("./Data")
+  return runner
 
 #query with only one node and no predicate
 query_withoutpredicate = {
@@ -270,3 +276,13 @@ query_json = {
 ])
 def query_list(request):
     return request.param
+
+
+@pytest.fixture(params=[
+   list('!(match &space (, (gene $n1) ) (, (gene $n1)))'),
+   tuple('!(match &space (, (gene $n1) ) (, (gene $n1)))'),
+   set('!(match &space (, (gene $n1) ) (, (gene $n1)))'),
+   {'query': '!(match &space (, (gene $n1) ) (, (gene $n1)))'}
+])
+def meta_run(request):
+  return request.param
