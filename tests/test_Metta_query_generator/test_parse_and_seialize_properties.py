@@ -6,7 +6,6 @@ def test_onenode_oneexpressionAtom_variableatom(runner):
         test = [E(
                 E(S("node"), S("gene_name"), E(S("gene"), V("ENSG00000101349")), S("PAK5")))]
         runner.parse_and_serialize_properties(test)
-    
 
 def test_onenode_oneexpressionAtom_tuple(runner):
     with pytest.raises(TypeError):
