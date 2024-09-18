@@ -102,6 +102,10 @@ class CypherQueryGenerator(QueryGeneratorInterface):
 
     def query_Generator(self, requests, schema):
         all_valid = True
+        # If 'nodes' or 'predicates' are missing or empty, raise an error
+        if not requests.get("nodes") and not requests.get("predicates"):
+            raise ValueError("Request must contain at least one node or predicate.")
+
         node_map = validate_request(requests, schema)
 
         if node_map is None:
