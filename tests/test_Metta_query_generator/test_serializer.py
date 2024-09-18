@@ -27,6 +27,11 @@ def test_faulty_expresionatom_list(runner):
     assert type(output) is list
     assert output == []
 
+def test_expressionatom_tuple(runner):
+    with pytest.raises(TypeError):
+        test_tuple = (E(E(S(","), S("gene"), S("ENSG00000175793"))))
+        runner.metta_seralizer(test_tuple)
+
 def test_odd_expressionatom_tuple(runner):
     test_tuple = tuple([E(E(S(","), S("gene"), S("ENSG00000175793")))])
     output = runner.metta_seralizer(test_tuple)

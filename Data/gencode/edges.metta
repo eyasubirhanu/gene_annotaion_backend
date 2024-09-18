@@ -1,3 +1,6 @@
+(transcribed_to (gene ENSG00000101349) (transcript ENST00000353224))
+(source (transcribed_to (gene ENSG00000101349) (transcript ENST00000353224)) GENCODE)
+(source_url (transcribed_to (gene ENSG00000101349) (transcript ENST00000353224)) https://www.gencodegenes.org/human/)
 (transcribed_to (gene ENSG00000175793) (transcript ENST00000339276))
 (transcribed_to (gene ENSG00000134308) (transcript ENST00000238081))
 (transcribed_to (gene ENSG00000170027) (transcript ENST00000307630))
