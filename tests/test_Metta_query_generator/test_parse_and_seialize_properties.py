@@ -73,6 +73,13 @@ def test_list(runner):
     for i in range(len(output[0])):
         assert list(output[0][i].keys()) == ['data']
 
+def test_onenode_oneexpressionAtom_wronglength(runner):
+    with pytest.raises(ValueError):
+        test = [E(
+                E(S("node"), S("gene_name"), E(S("gene"), S("ENSG00000101349"))))]
+        runner.parse_and_serialize_properties(test)
+    
+
 def test_onenode_oneexpressionAtom(runner):
     test = [E(
                 E(S("node"), S("gene_name"), E(S("gene"), S("ENSG00000101349")), S("PAK5")))]
@@ -203,3 +210,126 @@ def test_twonode_twoexpressionAtom_fourid(runner):
     assert len(output) == 2
     for i in range(len(output[0])):
         assert list(output[0][i].keys()) == ['data']
+
+def test_oneedge_oneexpressionAtom(runner):
+    test = [E(
+                E(S("edge"), S("source"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000101349")), E(S("transcript"), S("ENST00000353224"))), S("GENCODE"))
+            )]
+    output = runner.parse_and_serialize_properties(test)
+    assert output == [[], [
+        {'data': {
+            'label': 'transcribed_to', 
+            'source': 'gene ENSG00000101349', 
+            'target': 'transcript ENST00000353224', 
+            'source_data': 'GENCODE'
+            }}
+        ]]
+    assert type(output) is list
+    assert type(output[0]) is list
+    assert type(output[1]) is list
+    assert len(output) == 2
+    for j in range(2):
+        for i in range(len(output[j])):
+            assert list(output[j][i].keys()) == ['data']
+
+def test_oneedge_twoexpressionAtom(runner):
+    test = [E(
+                E(S("edge"), S("source"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000101349")), E(S("transcript"), S("ENST00000353224"))), S("GENCODE")),
+                E(S("edge"), S("source_url"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000101349")), E(S("transcript"), S("ENST00000353224"))), S("https://www.gencodegenes.org/human/"))
+            )]
+    output = runner.parse_and_serialize_properties(test)
+    assert output == [[], [
+        {'data': {
+            'label': 'transcribed_to', 
+            'source': 'gene ENSG00000101349', 
+            'target': 'transcript ENST00000353224', 
+            'source_data': 'GENCODE',
+            'source_url': 'https://www.gencodegenes.org/human/'
+            }}
+        ]]
+    assert type(output) is list
+    assert type(output[0]) is list
+    assert type(output[1]) is list
+    assert len(output) == 2
+    for j in range(2):
+        for i in range(len(output[j])):
+            assert list(output[j][i].keys()) == ['data']
+
+def test_oneedge_twoexpressionAtom_threeid(runner):
+    test = [E(
+                E(S("edge"), S("source"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000101349")), E(S("transcript"), S("ENST00000353224"))), S("GENCODE")),
+                E(S("edge"), S("source_url"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000203459")), E(S("transcript"), S("ENST00000353224"))), S("https://www.gencodegenes.org/human/"))
+            )]
+    output = runner.parse_and_serialize_properties(test)
+    assert output == [[], [
+        {'data': {
+            'label': 'transcribed_to', 
+            'source': 'gene ENSG00000101349', 
+            'target': 'transcript ENST00000353224', 
+            'source_data': 'GENCODE'
+            }},
+        {'data': {
+            'label': 'transcribed_to', 
+            'source': 'gene ENSG00000203459', 
+            'target': 'transcript ENST00000353224', 
+            'source_url': 'https://www.gencodegenes.org/human/'
+            }}
+        ]]
+    assert type(output) is list
+    assert type(output[0]) is list
+    assert type(output[1]) is list
+    assert len(output) == 2
+    for j in range(2):
+        for i in range(len(output[j])):
+            assert list(output[j][i].keys()) == ['data']
+
+def test_twoedge_twoexpressionAtom(runner):
+    test = [E(
+                E(S("edge"), S("source"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000101349")), E(S("transcript"), S("ENST00000353224"))), S("GENCODE"))),
+            E(
+                E(S("edge"), S("source_url"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000101349")), E(S("transcript"), S("ENST00000353224"))), S("https://www.gencodegenes.org/human/"))
+            )]
+    output = runner.parse_and_serialize_properties(test)
+    assert output == [[], [
+        {'data': {
+            'label': 'transcribed_to', 
+            'source': 'gene ENSG00000101349', 
+            'target': 'transcript ENST00000353224', 
+            'source_data': 'GENCODE',
+            'source_url': 'https://www.gencodegenes.org/human/'
+            }}
+        ]]
+    assert type(output) is list
+    assert type(output[0]) is list
+    assert type(output[1]) is list
+    assert len(output) == 2
+    for j in range(2):
+        for i in range(len(output[j])):
+            assert list(output[j][i].keys()) == ['data']
+
+def test_onenode_oneedge_twoexpressionAtom(runner):
+    test = [E(
+                E(S("node"), S("gene_name"), E(S("gene"), S("ENSG00000101349")), S("PAK5"))),
+            E(
+                E(S("edge"), S("source_url"), E(S("transcribed_to"), E(S("gene"), S("ENSG00000101349")), E(S("transcript"), S("ENST00000353224"))), S("https://www.gencodegenes.org/human/"))
+            )]
+    output = runner.parse_and_serialize_properties(test)
+    assert output == [[
+        {'data': {
+            'gene_name': 'PAK5',
+            'id': 'gene ENSG00000101349',
+            'type': 'gene'}}], [
+        {'data': {
+            'label': 'transcribed_to', 
+            'source': 'gene ENSG00000101349', 
+            'target': 'transcript ENST00000353224', 
+            'source_url': 'https://www.gencodegenes.org/human/'
+            }}
+        ]]
+    assert type(output) is list
+    assert type(output[0]) is list
+    assert type(output[1]) is list
+    assert len(output) == 2
+    for j in range(2):
+        for i in range(len(output[j])):
+            assert list(output[j][i].keys()) == ['data']

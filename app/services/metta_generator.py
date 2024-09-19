@@ -111,7 +111,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
             output += f' ({predicate_type} {source} {target})'
 
         metta_output += f' ){output}))'
-        # print("metta_output:", metta_output)
+        print("metta_output:", metta_output)
         return metta_output
 
 
