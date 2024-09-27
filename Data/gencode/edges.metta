@@ -7,6 +7,5 @@
 (transcribed_to (gene ENSG00000166913) (transcript ENST00000372839))
 (transcribed_to (gene ENSG00000128245) (transcript ENST00000248975))
 (transcribed_to (gene ENSG00000101349) (transcript ENST00000353224))
-(transcribed_to (gene ENSG00000101349) (transcript ENST00000353224))
 (source (transcribed_to (gene ENSG00000101349) (transcript ENST00000353224)) GENCODE)
 (source_url (transcribed_to (gene ENSG00000101349) (transcript ENST00000353224)) https://www.gencodegenes.org/human/)

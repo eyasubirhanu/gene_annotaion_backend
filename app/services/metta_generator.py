@@ -111,7 +111,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
             output += f' ({predicate_type} {source} {target})'
 
         metta_output += f' ){output}))'
-        print("metta_output:", metta_output)
+        # print("metta_output:", metta_output)
         return metta_output
 
 
@@ -121,6 +121,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
     def parse_and_serialize(self, input, schema):
         result = []
         tuples = self.metta_seralizer(input[0])
+
         for tuple in tuples:
             if len(tuple) == 2:
                 src_type, src_id = tuple
@@ -146,7 +147,6 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         relationships_dict = {}
         result = []
         tuples = self.metta_seralizer(input)
-
         for match in tuples:
             graph_attribute = match[0]
             match = match[1:]
@@ -197,6 +197,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         metta = ('''!(match &space (,''')
         output = (''' (,''')
         nodes = set()
+
         for result in results:
             source = result['source']
             source_node_type = result['source'].split(' ')[0]
@@ -226,7 +227,6 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                     output +=  " " + f'(edge {property} ({predicate} ({source}) ({target})) ${random})' 
 
         metta+= f" ) {output}))"
-
         return metta
 
     def recurssive_seralize(self, metta_expression, result):
