@@ -177,6 +177,35 @@ class CypherQueryGenerator(QueryGeneratorInterface):
     def parse_and_serialize(self, input,schema):
         parsed_result = self.parse_neo4j_results(input)
         return parsed_result["nodes"], parsed_result["edges"]
+    
+    def parse_id(seld, requests, node_map):
+        id_guide = {
+                    # "abc-regulatory_region": "rs10000009",
+                    # "caad-sequence_variant": "rs10",
+                    # "dbsuper-super_enhancer": "chr1_119942741_120072458_GRCh38",
+                    # "dbvar-structural_variant": "nssv16889290",
+                    # "dgv-structural_variant": "chr1_10002_22119_GRCh38",
+                    # "epd-promoter": "chr1_959246_959306_GRCh38",
+                    "exon": lambda s : s.lower(),
+                    "gene": lambda s : s.lower(),
+                    "transcript": lambda s : s.lower(),
+                    "motif": lambda s : s.lower(),
+                    # "ontology-ontology_term": "GO:0000001",
+                    # "peregrine-enhancer": "chr1_99534632_99534837_GRCh38",
+                    # "reactome-pathway": "R-HSA-164843",
+                    # "rna_central-non_coding_rna": "URS000035F234",
+                    # "regulatory_region": "rs10000007",
+                    # "tadmap-tad": "chr1_800000_1350000_GRCh38",
+                    # "uniport-protein": "Q9NU02"
+                }
+        for node in requests['nodes']:
+            if node['id'] != '' and id_guide[node["type"]] in id_guide.keys():
+                node['id'] = id_guide[node["type"]](node["id"])
+        
+        for node in node_map.values():
+            if node['id'] != '' and id_guide[node["type"]] in id_guide.keys():
+                node['id'] = id_guide[node["type"]](node['id'])
 
+        return requests, node_map
 
 

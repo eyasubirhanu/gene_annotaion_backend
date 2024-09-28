@@ -60,6 +60,9 @@ def process_query():
         database_type = config['database']['type']
         db_instance = databases[database_type]
         
+        # convert id to appropriate format
+        requests, node_map = db_instance.parse_id(requests, node_map)
+
         # Generate the query code
         query_code = db_instance.query_Generator(requests, node_map)
         
