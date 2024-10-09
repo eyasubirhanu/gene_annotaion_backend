@@ -134,6 +134,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         metta = ('''!(match &space (,''')
         output = (''' (,''') 
         nodes = set()
+        print(results)
         for result in results:
             source = result['source']
             source_node_type = result['source'].split(' ')[0]
@@ -281,7 +282,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         result = self.run_query(query)
         return result
     
-    def parse_id(seld, requests, node_map):
+    def parse_id(self, requests, node_map):
         id_guide = {
                     # "abc-regulatory_region": "rs10000009",
                     # "caad-sequence_variant": "rs10",

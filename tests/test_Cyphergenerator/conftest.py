@@ -1,10 +1,24 @@
 import pytest
-from app.services.metta_generator import MeTTa_Query_Generator
+from unittest.mock import patch, MagicMock
+from app.services.cypher_generator import CypherQueryGenerator
+
 
 @pytest.fixture()
 def runner():
-  runner = MeTTa_Query_Generator("./Data")
-  return runner
+  with patch('neo4j.GraphDatabase.driver') as mock_driver:
+    runner = CypherQueryGenerator("./cypher_data")
+    # Mock session
+    mock_session = MagicMock()
+    mock_driver.return_value.session.return_value = mock_session
+
+    # Mock return
+    mock_run = MagicMock()
+    mock_run.return_value = ['test']
+    mock_session.run = mock_run
+
+  # Mock driver's session method to return the mock session
+    mock_driver.return_value.session.return_value = mock_session
+    yield mock_driver
 
 #query with only one node and no predicate
 query_withoutpredicate = {
@@ -17,7 +31,7 @@ query_withoutpredicate = {
                     "properties": {} 
                 }]
             },
-        "expected_output": "!(match &space (, (gene $n1)"
+        "expected_output": ['MATCH (n_n1:gene) RETURN n_n1']
          }
 
 #query with only one node and a node id
@@ -31,9 +45,8 @@ query_one_node_noid = {
               }],
 		        "predicates": []
           },
-          "expected_output": "!(match &space (, (gene $n1) ) (, (gene $n1)))"
+          "expected_output": ['MATCH (n_n1:gene) RETURN n_n1']
         }
-
 
 query_one_node_with_id = {
           "node": {
@@ -60,7 +73,7 @@ query_one_node_with_id_properties = {
               }],
 		        "predicates": []
           },
-          "expected_output": "!(match &space (, (gene testcase) ) (, (gene testcase)))"
+          "expected_output": ["MATCH (n_n1:gene {id: 'testcase'}) RETURN n_n1"]
         }
 
 query_one_node_noid_with_oneproperty = {
@@ -75,7 +88,7 @@ query_one_node_noid_with_oneproperty = {
               }],
 		        "predicates": []
           },
-          "expected_output": "!(match &space (, (gene_type (gene $n1) protein_coding) ) (, (gene $n1)))"
+          "expected_output": ["MATCH (n_n1:gene {gene_type: 'protein_coding'}) RETURN n_n1"]
         }
 
 query_one_node_noid_with_properties = {
@@ -91,7 +104,7 @@ query_one_node_noid_with_properties = {
               }],
 		        "predicates": []
           },
-          "expected_output": "!(match &space (, (gene_type (gene $n1) protein_coding) (chr (gene $n1) chr1) ) (, (gene $n1)))"
+          "expected_output": ["MATCH (n_n1:gene {gene_type: 'protein_coding', chr: 'chr1'}) RETURN n_n1"]
         }
 
 query_two_node_noid_noproperties = {
@@ -111,7 +124,7 @@ query_two_node_noid_noproperties = {
               ],
 		        "predicates": []
           },
-          "expected_output": "!(match &space (, (gene $n1) (gene $n2) ) (, (gene $n1) (gene $n2)))"
+          "expected_output":  ['MATCH (n_n1:gene), (n_n2:gene) RETURN n_n1, n_n2']
         }
 
 query_two_node_noid_with_properties = {
@@ -135,7 +148,7 @@ query_two_node_noid_with_properties = {
               ],
 		        "predicates": []
           },
-          "expected_output": "!(match &space (, (gene_type (gene $n1) protein_coding) (chr (gene $n2) chr1) ) (, (gene $n1) (gene $n2)))"
+          "expected_output": ["MATCH (n_n1:gene {gene_type: 'protein_coding'}), (n_n2:gene {chr: 'chr1'}) RETURN n_n1, n_n2"]
         }
 
 query_two_node_id_with_properties = {
@@ -159,7 +172,7 @@ query_two_node_id_with_properties = {
               ],
 		        "predicates": []
           },
-          "expected_output": "!(match &space (, (gene testcase) (chr (gene $n2) chr1) ) (, (gene testcase) (gene $n2)))"
+          "expected_output": ["MATCH (n_n1:gene {id: 'testcase'}), (n_n2:gene {chr: 'chr1'}) RETURN n_n1, n_n2"]
         }
 
 query_two_node_with_predicate = {
@@ -185,7 +198,7 @@ query_two_node_with_predicate = {
               "target": "n2"
               }]
           },
-          "expected_output": "!(match &space (, (transcribed_to (gene testcase) (transcript $n2)) ) (, (transcribed_to (gene testcase) (transcript $n2))))"
+          "expected_output":  ["MATCH (n1:gene {id: 'testcase'}), (n1)-[r0:transcribed_to]->(n2:transcript) RETURN r0, n1, n2"]
         }
 
 query_three_node_with_predicate = {
@@ -222,7 +235,7 @@ query_three_node_with_predicate = {
           }
       ]
       },
-    "expected_output": "!(match &space (, (protein_name (protein $n3) ANKE1) (gene_type (gene $n1) protein_coding) (transcribed_to (gene $n1) (transcript $n2)) ) (, (protein $n3) (transcribed_to (gene $n1) (transcript $n2))))"
+    "expected_output": ["MATCH (n1:gene {gene_type: 'protein_coding'}), (n1)-[r0:transcribed_to]->(n2:transcript) RETURN r0, n1, n2 , null AS n_n3 UNION MATCH (n_n3:protein {protein_name: 'ANKE1'}) RETURN  n_n3 , null AS r0, null AS n1, null AS n2"]
     }
 
 query_json = {
@@ -259,31 +272,21 @@ query_json = {
       }
    ]
   },
-  "expected_output": "!(match &space (, (protein_name (protein $n3) ANKE1) (gene_type (gene $n1) protein_coding) (transcribed_to (gene $n1) (transcript $n2)) ) (, (protein $n3) (transcribed_to (gene $n1) (transcript $n2))))"
+  "expected_output": ["MATCH (n1:gene {gene_type: 'protein_coding'}), (n1)-[r0:transcribed_to]->(n2:transcript) RETURN r0, n1, n2 , null AS n_n3 UNION MATCH (n_n3:protein {protein_name: 'ANKE1'}) RETURN  n_n3 , null AS r0, null AS n1, null AS n2"]
 }
 
-@pytest.fixture(params=[query_json,
-     query_three_node_with_predicate,
-     query_two_node_with_predicate,
-     query_two_node_id_with_properties,
-     query_two_node_noid_with_properties,
-     query_two_node_noid_noproperties,
-     query_one_node_noid_with_properties,
-     query_one_node_noid_with_oneproperty,
-     query_one_node_with_id_properties,
-     query_one_node_with_id,
-     query_withoutpredicate
+@pytest.fixture(params=[
+  query_json,
+  query_three_node_with_predicate,
+  query_two_node_with_predicate,
+  query_two_node_id_with_properties,
+  query_two_node_noid_with_properties,
+  query_two_node_noid_noproperties,
+  query_one_node_noid_with_properties,
+  query_one_node_noid_with_oneproperty,
+  query_one_node_with_id_properties,
+  query_one_node_noid,
+  query_withoutpredicate
 ])
 def query_list(request):
     return request.param
-
-
-@pytest.fixture(params=[
-   list('!(match &space (, (gene $n1) ) (, (gene $n1)))'),
-   tuple('!(match &space (, (gene $n1) ) (, (gene $n1)))'),
-   set('!(match &space (, (gene $n1) ) (, (gene $n1)))'),
-   {'query': '!(match &space (, (gene $n1) ) (, (gene $n1)))'}
-])
-
-def meta_run(request):
-  return request.param

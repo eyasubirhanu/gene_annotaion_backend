@@ -40,8 +40,10 @@ def parse_match(match:str, schema) -> bool:
     for m in match_list:
         if len(m) == 5:
             represented_as, predicate, node_type, node_id, node_var = m
+            if node_type not in schema.keys():
+                return False
             if represented_as != schema[node_type]['represented_as']:
-                raise Exception(f'node type {node_type} can not be an {represented_as}')
+                return False
             if node_type not in match_dict.keys():
                 match_dict[node_type] = {}
             if node_id not in match_dict[node_type].keys():
@@ -50,9 +52,11 @@ def parse_match(match:str, schema) -> bool:
                 match_dict[node_type][node_id].append((predicate, node_var))
         if len(m) == 8:
             represented_as, predicate, edge, source_type, source_id, tgt_type, tgt_id, node_var  = m
-            search_edge = edge.replace('_', ' ')
+            search_edge = f'{source_type}-{edge}-{tgt_type}'
+            if search_edge not in schema.keys():
+                return False
             if represented_as != schema[search_edge]['represented_as']:
-                raise Exception(f'node type {node_type} can not be an {represented_as}')
+                raise False
             if edge not in match_dict.keys():
                 match_dict[edge] = {}
             key = f'{source_id} {tgt_id}'
@@ -74,9 +78,6 @@ def parse_node(output:str, schema) -> bool:
     # parse the search and match into a dict of structure
     # {'type':{'id':[('property', 'variable'),...],...}...}
     parsed_source = parse_search(search)
-    try:
-        parsed_match = parse_match(match, schema)
-    except (Exception) as e:
-        return e
+    parsed_match = parse_match(match, schema)
     
     return parsed_source == parsed_match

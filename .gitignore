@@ -12,6 +12,6 @@ tags
 output
 .pytest_cahce
 tests\test_Metta_query_generator\test_parse_and_serialize_properties.txt
-get_node.py
-id.json
-lamda_test.py
+querygenerator.py
+rungenerator.py
+result.txt
