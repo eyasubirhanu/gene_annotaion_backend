@@ -7,18 +7,7 @@ from app.services.cypher_generator import CypherQueryGenerator
 def runner():
   with patch('neo4j.GraphDatabase.driver') as mock_driver:
     runner = CypherQueryGenerator("./cypher_data")
-    # Mock session
-    mock_session = MagicMock()
-    mock_driver.return_value.session.return_value = mock_session
-
-    # Mock return
-    mock_run = MagicMock()
-    mock_run.return_value = ['test']
-    mock_session.run = mock_run
-
-  # Mock driver's session method to return the mock session
-    mock_driver.return_value.session.return_value = mock_session
-    yield mock_driver
+    return runner
 
 #query with only one node and no predicate
 query_withoutpredicate = {

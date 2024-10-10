@@ -12,6 +12,7 @@ tags
 output
 .pytest_cahce
 tests\test_Metta_query_generator\test_parse_and_serialize_properties.txt
-querygenerator.py
+processresult.py
 rungenerator.py
 result.txt
+.vscode
