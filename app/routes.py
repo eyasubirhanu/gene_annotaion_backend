@@ -10,6 +10,7 @@ from flask_cors import CORS
 from app.lib import limit_graph
 from app.lib.email import init_mail, send_email
 from dotenv import load_dotenv
+from distutils.util import strtobool
 
 # Load environmental variables
 load_dotenv()
@@ -67,7 +68,22 @@ def process_query():
     data = request.get_json()
     if not data or 'requests' not in data:
         return jsonify({"error": "Missing requests data"}), 400
+    
+    limit = request.args.get('limit')
+    properties = request.args.get('properties')
+    
+    if properties:
+        properties = bool(strtobool(properties))
+    else:
+        properties = False
 
+    if limit:
+        try:
+            limit = int(limit)
+        except ValueError:
+            return jsonify({"error": "Invalid limit value. It should be an integer."}), 400
+    else:
+        limit = None
     try:
         requests = data['requests']
         
@@ -75,28 +91,26 @@ def process_query():
         node_map = validate_request(requests, schema_manager.schema)
         if node_map is None:
             return jsonify({"error": "Invalid node_map returned by validate_request"}), 400
-        
+
         database_type = config['database']['type']
         db_instance = databases[database_type]
-        
-        # convert id to appropriate format
-        requests, node_map = db_instance.parse_id(requests, node_map)
+
+        #convert id to appropriate format
+        requests = db_instance.parse_id(requests)
 
         # Generate the query code
         query_code = db_instance.query_Generator(requests, node_map)
         
         # Run the query and parse the results
         result = db_instance.run_query(query_code)
-        parsed_result = db_instance.parse_and_serialize(result, schema_manager.schema)
+        parsed_result = db_instance.parse_and_serialize(result, schema_manager.schema, properties)
         
         response_data = {
             "nodes": parsed_result[0],
             "edges": parsed_result[1]
         }
         
-        limit = config['graph']['limit']
-
-        if isinstance(limit, str) and limit != 'None':
+        if limit:
             response_data = limit_graph(response_data, limit)
 
         formatted_response = json.dumps(response_data, indent=4)

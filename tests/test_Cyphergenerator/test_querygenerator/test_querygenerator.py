@@ -6,7 +6,6 @@ def test_one_node_query(runner, schema, one_query_list):
     query = runner.query_Generator(query, node_map)
     expected_output = one_query_list['expected_output']
     assert type(query) is list
-    assert type()
     assert query == expected_output
 
 def test_multiple_node_query(runner, schema, multiple_query_list):

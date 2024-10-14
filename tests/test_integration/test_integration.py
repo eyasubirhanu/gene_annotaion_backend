@@ -1,9 +1,8 @@
 import json
 import logging
 from app import app
-app.logger.disabled = True
-logging.getLogger('werkzeug').disabled = True
-logging.basicConfig(level=logging.DEBUG)
+# set logging level of Neo4j
+logging.getLogger('neo4j').setLevel(logging.CRITICAL)
 
 def test_process_query(query_list, schema):
     # make a call to the /query endpoint
