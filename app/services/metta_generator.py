@@ -120,21 +120,20 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
     def run_query(self, query_code):
         return self.metta.run(query_code)
 
-    def parse_and_serialize(self, input, schema):
+    def parse_and_serialize(self, input, schema, all_properties):
         result = self.prepare_query_input(input, schema)
-        result = self.parse_and_serialize_properties(result[0])
+        result = self.parse_and_serialize_properties(result[0], all_properties)
 
         return result
         
-    def parse_and_serialize_properties(self, input):
-        (result, _, _) = self.process_result(input)
+    def parse_and_serialize_properties(self, input, all_properties):
+        (result, _, _) = self.process_result(input, all_properties)
         return result
 
     def get_node_properties(self, results, schema):
         metta = ('''!(match &space (,''')
         output = (''' (,''') 
         nodes = set()
-        print(results)
         for result in results:
             source = result['source']
             source_node_type = result['source'].split(' ')[0]
@@ -191,10 +190,10 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
 
     def convert_to_dict(self, results, schema=None):
         result = self.prepare_query_input(results, schema)
-        (_, node_dict, edge_dict) = self.process_result(result[0])
+        (_, node_dict, edge_dict) = self.process_result(result[0], True)
         return (node_dict, edge_dict)
 
-    def process_result(self, results):
+    def process_result(self, results, all_properties):
         nodes = {}
         relationships_dict = {}
         result = []
@@ -203,6 +202,7 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
         node_type = set()
         edge_type = set()
         tuples = self.metta_seralizer(results)
+        named_types = ['gene_name', 'transcript_name', 'protein_name']
 
         for match in tuples:
             graph_attribute = match[0]
@@ -221,7 +221,13 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                         "id": f"{src_type} {src_value}",
                         "type": src_type,
                     }
-                nodes[(src_type, src_value)][predicate] = tgt
+                
+                if all_properties:
+                     nodes[(src_type, src_value)][predicate] = tgt
+                else:
+                    if predicate in named_types:
+                        nodes[(src_type, src_value)]['name'] = tgt
+
                 if 'synonyms' in nodes[(src_type, src_value)]:
                     del nodes[(src_type, src_value)]['synonyms']
                 if src_type not in node_type:
@@ -277,39 +283,22 @@ class MeTTa_Query_Generator(QueryGeneratorInterface):
                 "source": f"{src_type} {src_id}",
                 "target": f"{tgt_type} {tgt_id}"
                 })
-        
+
         query = self.get_node_properties(result, schema)
         result = self.run_query(query)
         return result
-    
-    def parse_id(self, requests, node_map):
-        id_guide = {
-                    # "abc-regulatory_region": "rs10000009",
-                    # "caad-sequence_variant": "rs10",
-                    # "dbsuper-super_enhancer": "chr1_119942741_120072458_GRCh38",
-                    # "dbvar-structural_variant": "nssv16889290",
-                    # "dgv-structural_variant": "chr1_10002_22119_GRCh38",
-                    # "epd-promoter": "chr1_959246_959306_GRCh38",
-                    "exon": lambda s : s.upper(),
-                    "gene": lambda s : s.upper(),
-                    "transcript": lambda s : s.upper(),
-                    "motif": lambda s : s.upper(),
-                    # "ontology-ontology_term": "GO:0000001",
-                    # "peregrine-enhancer": "chr1_99534632_99534837_GRCh38",
-                    # "reactome-pathway": "R-HSA-164843",
-                    # "rna_central-non_coding_rna": "URS000035F234",
-                    # "regulatory_region": "rs10000007",
-                    # "tadmap-tad": "chr1_800000_1350000_GRCh38",
-                    # "uniport-protein": "Q9NU02"
-                }
-        
-        for node in requests['nodes']:
-            if node['id'] != '' and node["type"] in id_guide.keys():
-                node['id'] = id_guide[node["type"]](node["id"])
-        
-        for node in node_map.values():
-            if node['id'] != '' and node["type"] in id_guide.keys():
-                node['id'] = id_guide[node["type"]](node['id'])
 
-        # print('reqests:\t', requests, '\n', 'node_map:\t', node_map)
-        return requests, node_map
+    def parse_id(self, request):
+        nodes = request["nodes"]
+        named_types = {"gene": "gene_name", "transcript": "transcript_name"}
+        prefixes = ["ENSG", "ENST"]
+
+        for node in nodes:
+            is_named_type = node['type'] in named_types
+            is_name_as_id = all(not node["id"].startswith(prefix) for prefix in prefixes)
+            no_id = node["id"] != ''
+            if is_named_type and is_name_as_id and no_id:
+                node_type = named_types[node['type']]
+                node['properties'][node_type] = node["id"]
+                node['id'] = ''
+        return request

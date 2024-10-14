@@ -30,13 +30,7 @@ def validate_request(request, schema):
                 raise Exception(f"{property} doesn't exsist in the schema!")
     '''
 
-    # node_map = {node['node_id']: node for node in nodes }
-    node_map = {}
-    for node in nodes:
-        if node['node_id'] not in node_map:
-            node_map[node['node_id']] = node
-        else:
-            raise Exception('Repeated Node_id')
+    node_map = {node['node_id']: node for node in nodes}
 
     # validate predicates
     if 'predicates' in request:

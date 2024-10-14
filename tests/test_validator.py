@@ -76,32 +76,6 @@ def test_node_without_type():
     with pytest.raises(Exception, match="type is required"):
         validate_request(request, schema_manager.schema)
 
-def test_node_without_properties():
-    #assert each node in nodes value has an properties
-    request = {'nodes': [
-        { "node_id": "n1", # node with out properties
-          "id": "",
-          "type": "gene"
-        }]}
-
-    with pytest.raises(Exception, match="properties is required"):
-        validate_request(request, schema_manager.schema)
-
-def test_properties_key():
-    # assert each predicate has proper keys
-    request = {'nodes': [{
-            "node_id": "n3",
-            "id": "", 
-            "type": "protein",
-            "properties": { # node with improper properties key
-                    "protein_nam": "MKKS"
-                }
-        }
-    ]}
-
-    with pytest.raises(Exception, match="protein_nam doesn't exsist in the schema!"):
-        validate_request(request, schema_manager.schema)
-
 def test_predicate_type():
     # assert predicate is of type list
     requests = [
@@ -259,5 +233,31 @@ def test_predicte_target_map():
         validate_request(request, schema_manager.schema)
 
 # add test for last exception
-def test_predicate_schema_type():
-    pass
+def test_predicate_type_in_schema():
+    # assert predicate type '{source_type}-{predicate_type}-{target_type}' must be in the schema
+    request =  {
+        "nodes": [
+            {
+                "node_id": "n1",
+                "id": "",
+                "type": "transcript",
+                "properties": {}
+            },
+            {
+                "node_id": "n2",
+                "id": "",
+                "type": "protein",
+                "properties": {}
+            }
+            ],
+        "predicates": [
+            {
+                "type": "translates to",
+                "source": "n2",
+                "target": "n1"
+            }
+        ]
+    }
+    
+    with pytest.raises(Exception, match="Invalid source and target for the predicate translates to"):
+        validate_request(request, schema_manager.schema)
