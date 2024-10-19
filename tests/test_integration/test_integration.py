@@ -3,11 +3,13 @@ import logging
 from app import app
 # set logging level of Neo4j
 logging.getLogger('neo4j').setLevel(logging.CRITICAL)
+app.testing = True
 
 def test_process_query(query_list, schema):
     # make a call to the /query endpoint
 
     with app.test_client() as client:
+        client = app.test_client()
         response = client.post('/query', data=json.dumps(query_list), content_type='application/json')
         assert response._status == '200 OK'
         
@@ -38,6 +40,4 @@ def test_process_query(query_list, schema):
             assert isinstance(value, dict)
             keys = ["label", "source", "target", "source_data", "source_url"]
             assert keys.sort() == list(value['data'].keys()).sort()
-            i += 1
-
-        
+            i += 1        
