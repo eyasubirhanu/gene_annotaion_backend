@@ -18,4 +18,8 @@ class StorageService():
     def get(self, user_id):
         data = Storage.find({"user_id": user_id}, one=True)
         return data
+    
+    def get_all(self, user_id, page_number):
+        data = Storage.find({"user_id": user_id}).sort('_id', -1).skip((page_number - 1) * 10).limit(10)
+        return data
         

@@ -18,6 +18,9 @@ from app.persistence.storage_service import StorageService
 # Load environmental variables
 load_dotenv()
 
+# set mongo loggin
+logging.getLogger('pymongo').setLevel(logging.CRITICAL)
+
 # Flask-Mail configuration
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER') 
 app.config['MAIL_PORT'] = os.getenv('MAIL_PORT')
@@ -186,3 +189,27 @@ def process_email_query(current_user_id):
     sender = threading.Thread(name='main_sender', target=send_full_data)
     sender.start() 
     return jsonify({'message': 'Email sent successfully'}), 200
+
+@app.route('/history')
+@token_required
+def process_user_history(current_user_id):
+
+    page_number = request.args.get('page_number')
+    if page_number is not None:
+        page_number = int(page_number)
+    else:
+        page_number = 1
+
+    return_value = []
+    storage_service = StorageService()
+    cursor = storage_service.get_all(current_user_id, page_number)
+    if cursor is None:
+        return jsonify('No value Found'), 200
+    for document in cursor:
+        return_value.append({
+            'id': str(document['_id']),
+            'tile': document['title'],
+            'summary': document['summary']
+        })
+
+    return Response(json.dumps(return_value, indent=4), mimetype='application/json')
