@@ -1,16 +1,33 @@
 import json
 import logging
 from app import app
+import jwt
+import datetime
 # set logging level of Neo4j
 logging.getLogger('neo4j').setLevel(logging.CRITICAL)
 app.testing = True
+
+def generate_jwt():
+    SECRET_KEY = 'your_secret_key_here'
+
+    # Define the token payload
+    payload = {
+        'user_id': "20",  # Replace with the actual user ID or relevant identifier
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=5),  # Token expiration time
+        'iat': datetime.datetime.utcnow(),  # Issued at time
+        'nbf': datetime.datetime.utcnow()  # Not before time
+    }
+
+    # Encode the token
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return {'Authorization': token}
 
 def test_process_query(query_list, schema):
     # make a call to the /query endpoint
 
     with app.test_client() as client:
-        client = app.test_client()
-        response = client.post('/query', data=json.dumps(query_list), content_type='application/json')
+        header = generate_jwt()
+        response = client.post('/query', data=json.dumps(query_list), headers=header, content_type='application/json')
         assert response._status == '200 OK'
         
         # test output dict keys

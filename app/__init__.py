@@ -2,9 +2,10 @@ from flask import Flask
 from app.services.schema_data import SchemaManager
 from app.services.cypher_generator import CypherQueryGenerator
 from app.services.metta_generator import MeTTa_Query_Generator
+from db import mongo_init
 
 app = Flask(__name__)
-
+mongo_init()
 databases = {
     "metta": MeTTa_Query_Generator("./Data"),
     "cypher": CypherQueryGenerator("./cypher_data")

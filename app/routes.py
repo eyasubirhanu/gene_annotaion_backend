@@ -124,6 +124,7 @@ def process_query(current_user_id):
         title = llm.generate_title(query_code)
         summary = llm.generate_summary(response_data)
         
+        
         storage_service = StorageService()
         
         data = None
