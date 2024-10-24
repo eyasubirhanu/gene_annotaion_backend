@@ -48,3 +48,4 @@ def map_graph(graph):
         if not has_edge:
             single_node_idx.append(idx)
     return edge_indices, single_node_idx, node_id_to_index
+

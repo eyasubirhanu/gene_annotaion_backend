@@ -26,4 +26,3 @@ def mongo_init():
         traceback.print_exc()
         print("Error initializing database")
         exit(1)
-

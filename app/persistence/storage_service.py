@@ -4,11 +4,10 @@ class StorageService():
     def __init__(self):
         pass
     
-    def save(self, user_id, type, data, title, summary):
+    def save(self, user_id, data, title, summary):
         data = Storage(
                 user_id=user_id,
-                type=type,
-                result=data,
+                query=data,
                 title=title,
                 summary=summary
                 )
@@ -21,5 +20,9 @@ class StorageService():
     
     def get_all(self, user_id, page_number):
         data = Storage.find({"user_id": user_id}).sort('_id', -1).skip((page_number - 1) * 10).limit(10)
+        return data
+    
+    def get_by_id(self, id):
+        data = Storage.find_by_id(id)
         return data
         
